@@ -121,6 +121,32 @@ class DjangoViteAssetLoader:
 
         return "\n".join(tags)
 
+    def generate_vite_asset_url(self, path: str) -> str:
+        """
+        Generates only the URL of an asset managed by ViteJS.
+        Warning, this function does not generate URLs for dependant assets.
+
+        Arguments:
+            path {str} -- Path to a Vite asset.
+
+        Raises:
+            RuntimeError: If cannot find the asset path in the manifest (only in production).
+
+        Returns:
+            str -- The URL of this asset.
+        """
+
+        if DJANGO_VITE_DEV_MODE:
+            return DjangoViteAssetLoader._generate_vite_server_url(path)
+
+        if path not in self._manifest:
+            raise RuntimeError(
+                f"Cannot find {path} in Vite manifest "
+                f"at {DJANGO_VITE_MANIFEST_PATH}"
+            )
+
+        return urljoin(settings.STATIC_URL, self._manifest[path]["file"])
+
     def _parse_manifest(self) -> None:
         """
         Read and parse the Vite manifest file.
@@ -274,3 +300,21 @@ def vite_asset(path: str, scripts_attrs: Optional[Dict[str, str]] = None) -> str
     return DjangoViteAssetLoader.instance().generate_vite_asset(
         path, scripts_attrs=scripts_attrs
     )
+
+
+@register.simple_tag
+def vite_asset_url(path: str) -> str:
+    """
+    Generates only the URL of an asset managed by ViteJS.
+    Warning, this function does not generate URLs for dependant assets.
+
+    Arguments:
+        path {str} -- Path to a Vite asset.
+
+    Returns:
+        [type] -- The URL of this asset.
+    """
+
+    assert path is not None
+
+    return DjangoViteAssetLoader.instance().generate_vite_asset_url(path)
