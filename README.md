@@ -114,6 +114,14 @@ This will add a `<script>` tag including your JS/TS script :
 - In general, this path does not require a `/` at the beginning
   (follow your `manifest.json` file).
 
+```
+{% vite_asset_url '<path to your asset>' %}
+```
+
+This will generate only the URL to an asset with no tag surrounding it.
+**Warning, this does not generate URLs for dependant assets of this one
+like the previous tag.**
+
 ## Miscellaneous configuration
 
 You can redefine those variables in your `settings.py` :
