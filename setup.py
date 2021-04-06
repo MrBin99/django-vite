@@ -1,6 +1,6 @@
 from os import path
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 this_directory = path.abspath(path.dirname(__file__))
 
@@ -16,6 +16,8 @@ setup(
     long_description_content_type="text/markdown",
     author="MrBin99",
     url="https://github.com/MrBin99/django-vite",
+    include_package_data=True,
+    packages=find_packages(),
     requires=[
         "Django (>=1.11)",
     ],
