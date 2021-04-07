@@ -1,6 +1,6 @@
 from os import path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 this_directory = path.abspath(path.dirname(__file__))
 
@@ -10,7 +10,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="django-vite",
-    version="1.0.2",
+    version="1.0.3",
     description="Integration of ViteJS in a Django project.",
     long_description=README,
     long_description_content_type="text/markdown",
