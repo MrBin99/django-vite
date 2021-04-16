@@ -60,7 +60,10 @@ class DjangoViteAssetLoader:
         raise RuntimeError("Use the instance() method instead.")
 
     def generate_vite_asset(
-        self, path: str, scripts_attrs: Optional[Dict[str, str]] = None
+        self,
+        path: str,
+        scripts_attrs: Optional[Dict[str, str]] = None,
+        with_imports: bool = True,
     ) -> str:
         """
         Generates all assets include tags for the file in argument.
@@ -78,6 +81,7 @@ class DjangoViteAssetLoader:
 
         Keyword Arguments:
             scripts_attrs {Optional[Dict[str, str]]} -- Override attributes added to scripts tags. (default: {None})
+            with_imports {bool} -- If generate assets for dependant assets of this one. (default: {True})
 
         Raises:
             RuntimeError: If cannot find the asset path in the manifest (only in production).
@@ -108,6 +112,17 @@ class DjangoViteAssetLoader:
                 tags.append(
                     DjangoViteAssetLoader._generate_stylesheet_tag(
                         urljoin(settings.STATIC_URL, css_path)
+                    )
+                )
+
+        # Add dependent "vendor"
+        if with_imports and "imports" in manifest_entry:
+            for vendor_path in manifest_entry["imports"]:
+                tags.append(
+                    self.generate_vite_asset(
+                        vendor_path,
+                        scripts_attrs=scripts_attrs,
+                        with_imports=with_imports,
                     )
                 )
 
@@ -279,7 +294,9 @@ def vite_hmr_client() -> str:
 
 @register.simple_tag
 @mark_safe
-def vite_asset(path: str, scripts_attrs: Optional[Dict[str, str]] = None) -> str:
+def vite_asset(
+    path: str, scripts_attrs: Optional[Dict[str, str]] = None, with_imports: bool = True
+) -> str:
     """
     Generates all assets include tags for the file in argument.
     Generates all scripts tags for this file and all its dependencies
@@ -291,6 +308,10 @@ def vite_asset(path: str, scripts_attrs: Optional[Dict[str, str]] = None) -> str
     Arguments:
         path {str} -- Path to a Vite asset to include.
 
+    Keyword Arguments:
+        scripts_attrs {Optional[Dict[str, str]]} -- Override attributes added to scripts tags. (default: {None})
+        with_imports {bool} -- If generate assets for dependant assets of this one. (default: {True})
+
     Returns:
         str -- All tags to import this asset in yout HTML page.
     """
@@ -298,7 +319,7 @@ def vite_asset(path: str, scripts_attrs: Optional[Dict[str, str]] = None) -> str
     assert path is not None
 
     return DjangoViteAssetLoader.instance().generate_vite_asset(
-        path, scripts_attrs=scripts_attrs
+        path, scripts_attrs=scripts_attrs, with_imports=with_imports
     )
 
 
