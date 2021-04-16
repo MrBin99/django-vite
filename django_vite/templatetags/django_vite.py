@@ -100,7 +100,7 @@ class DjangoViteAssetLoader:
 
         tags = []
         manifest_entry = self._manifest[path]
-        scripts_attrs = scripts_attrs or {"async": "", "defer": ""}
+        scripts_attrs = scripts_attrs or {"type": "module", "async": "", "defer": ""}
 
         # Add dependent CSS
         if "css" in manifest_entry:
