@@ -145,6 +145,11 @@ You can redefine those variables in your `settings.py` :
 - In production mode, all generated path are prefixed with the `STATIC_URL`
   setting of Django.
 
+## Example
+
+If you are struggling on how to setup a project using Django / ViteJS and Django Vite,
+I've made an [example project here](https://github.com/MrBin99/django-vite-example).
+
 ## Thanks
 
 Thanks to [Evan You](https://github.com/yyx990803) for the ViteJS library.
