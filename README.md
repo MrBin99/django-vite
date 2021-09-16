@@ -28,7 +28,7 @@ And mostly the SSR part.
 
 Then in your ViteJS config file :
 
-- Set the `root` options the same as your `STATIC_URL` Django setting.
+- Set the `base` options the same as your `STATIC_URL` Django setting.
 - Set the `build.outDir` path to where you want the assets to compiled.
 - Set the `build.manifest` options to `true`.
 - As you are in SSR and not in SPA, you don't have an `index.html` that
