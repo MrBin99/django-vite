@@ -1,6 +1,6 @@
 import json
 from os.path import join as path_join
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from urllib.parse import urljoin
 
 from django import template
@@ -107,13 +107,7 @@ class DjangoViteAssetLoader:
         scripts_attrs = scripts_attrs or {"type": "module", "async": "", "defer": ""}
 
         # Add dependent CSS
-        if "css" in manifest_entry:
-            for css_path in manifest_entry["css"]:
-                tags.append(
-                    DjangoViteAssetLoader._generate_stylesheet_tag(
-                        urljoin(settings.STATIC_URL, css_path)
-                    )
-                )
+        tags.extend(self._generate_css_files_of_asset(path, []))
 
         # Add the script by itself
         tags.append(
@@ -124,6 +118,42 @@ class DjangoViteAssetLoader:
         )
 
         return "\n".join(tags)
+
+    def _generate_css_files_of_asset(
+        self, path: str, already_processed: List[str]
+    ) -> List[str]:
+        """
+        Generates all CSS tags for dependencies of an asset.
+
+        Arguments:
+            path {str} -- Path to an asset in the 'manifest.json'.
+            already_processed {list} -- List of already processed CSS file.
+
+        Returns:
+            list -- List of CSS tags.
+        """
+
+        tags = []
+        manifest_entry = self._manifest[path]
+
+        if "imports" in manifest_entry:
+            for import_path in manifest_entry["imports"]:
+                tags.extend(
+                    self._generate_css_files_of_asset(import_path, already_processed)
+                )
+
+        if "css" in manifest_entry:
+            for css_path in manifest_entry["css"]:
+                if css_path not in already_processed:
+                    tags.append(
+                        DjangoViteAssetLoader._generate_stylesheet_tag(
+                            urljoin(settings.STATIC_URL, css_path)
+                        )
+                    )
+
+                already_processed.append(css_path)
+
+        return tags
 
     def generate_vite_asset_url(self, path: str) -> str:
         """
