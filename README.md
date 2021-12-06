@@ -162,7 +162,7 @@ You can redefine those variables in your `settings.py` :
   in the `vite_hmr_client` tag (default : `@vite/client`).
 - `DJANGO_VITE_MANIFEST_PATH` : Absolute path (including filename)
   to your ViteJS manifest file. This file is generated in your
-  `DJANGO_VITE_ASSETS_PATH`. But if you are in production (`DEBUG` is true)
+  `DJANGO_VITE_ASSETS_PATH`. But if you are in production (`DEBUG` is false)
   then it is in your `STATIC_ROOT` after you collected your
   [static files](https://docs.djangoproject.com/en/3.1/howto/static-files/).
 - `DJANGO_VITE_LEGACY_POLYFILLS_MOTIF` : The motif used to find the assets for polyfills inside the `manifest.json` (only if you use [@vitejs/plugin-legacy](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy)).
