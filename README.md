@@ -48,6 +48,15 @@ export default defineConfig({
 }
 ```
 
+### Assets
+
+As recommended on Vite's [backend integration guide](https://vitejs.dev/guide/backend-integration.html), your assets should include the modulepreload polyfill.
+
+```javascript
+// add the beginning of your app entry
+import 'vite/modulepreload-polyfill'
+```
+
 ## Usage
 
 ### Configuration
