@@ -180,14 +180,14 @@ You can redefine those variables in your `settings.py` :
   You may use it with `STATICFILES_DIRS`.    
   You also need to add this prefix inside vite config's `base`.    
 	e.g.:
-	```
+	```python
 	# settings.py
 
 	DJANGO_VITE_STATIC_URL_PREFIX = 'bundler'
 	STATICFILES_DIRS = (('bundler', '/srv/app/bundler/dist'),)
 	```
-	```
-	// vite.config.ts
+	```javascript
+	// vite.config.js
 
 	export default defineConfig({
 		base: '/static/bundler/',
