@@ -179,7 +179,7 @@ You can redefine those variables in your `settings.py` :
   (default : `""`)
   - Use it if you want to avoid conflicts with other static files in your project.
   - It may be used with `STATICFILES_DIRS`.
-  - You also need to add this prefix inside vite config's `base`.
+  - You also need to add this prefix inside vite config's `base`.    
   e.g.:
   ```python
   # settings.py
