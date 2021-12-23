@@ -175,10 +175,11 @@ You can redefine those variables in your `settings.py` :
   then it is in your `STATIC_ROOT` after you collected your
   [static files](https://docs.djangoproject.com/en/3.1/howto/static-files/).
 - `DJANGO_VITE_LEGACY_POLYFILLS_MOTIF` : The motif used to find the assets for polyfills inside the `manifest.json` (only if you use [@vitejs/plugin-legacy](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy)).
-- `DJANGO_VITE_STATIC_URL_PREFIX` : prefix directory of your static files built by Vite.    
-  You can define a value to avoid conflicts with other static files in your project.    
-  You may use it with `STATICFILES_DIRS`.    
-  You also need to add this prefix inside vite config's `base`.    
+- `DJANGO_VITE_STATIC_URL_PREFIX` : prefix directory of your static files built by Vite.
+  (default : `""`)
+  - Use it if you want to avoid conflicts with other static files in your project.
+  - It may be used with `STATICFILES_DIRS`.
+  - You also need to add this prefix inside vite config's `base`.
   e.g.:
   ```python
   # settings.py
