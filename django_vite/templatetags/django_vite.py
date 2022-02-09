@@ -107,7 +107,7 @@ class DjangoViteAssetLoader:
                 {"type": "module", "async": "", "defer": ""},
             )
 
-        if path not in self._manifest:
+        if not self._manifest or path not in self._manifest:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
@@ -184,7 +184,7 @@ class DjangoViteAssetLoader:
         if DJANGO_VITE_DEV_MODE:
             return DjangoViteAssetLoader._generate_vite_server_url(path)
 
-        if path not in self._manifest:
+        if not self._manifest or path not in self._manifest:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
@@ -252,7 +252,7 @@ class DjangoViteAssetLoader:
         if DJANGO_VITE_DEV_MODE:
             return ""
 
-        if path not in self._manifest:
+        if not self._manifest or path not in self._manifest:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
