@@ -179,7 +179,7 @@ You can redefine those variables in your `settings.py` :
   (default : `""`)
   - Use it if you want to avoid conflicts with other static files in your project.
   - It may be used with `STATICFILES_DIRS`.
-  - You also need to add this prefix inside vite config's `base`.    
+  - You also need to add this prefix inside vite config's `base`.
   e.g.:
   ```python
   # settings.py
@@ -198,6 +198,20 @@ You can redefine those variables in your `settings.py` :
 
 - In production mode, all generated path are prefixed with the `STATIC_URL`
   setting of Django.
+
+- If you are serving your static files with whitenoise, by default your files compiled by vite will not be considered immutable and a bad cache-control will be set. To fix this you will need to set a custom test like so:
+```
+import re
+# Vite generates files with 8 hash digits
+# http://whitenoise.evans.io/en/stable/django.html#WHITENOISE_IMMUTABLE_FILE_TEST
+def immutable_file_test(path, url):
+    # Match filename with 12 hex digits before the extension
+    # e.g. app.db8f2edc0c8a.js
+    return re.match(r"^.+\.[0-9a-f]{8,12}\..+$", url)
+
+
+WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
+```
 
 ## Example
 
