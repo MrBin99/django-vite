@@ -24,4 +24,5 @@ setup(
     install_requires=[
         "Django>=1.11",
     ],
+    extras_require={"dev": ["black", "flake8"]},
 )
