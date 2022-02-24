@@ -53,8 +53,8 @@ export default defineConfig({
 As recommended on Vite's [backend integration guide](https://vitejs.dev/guide/backend-integration.html), your assets should include the modulepreload polyfill.
 
 ```javascript
-// add the beginning of your app entry
-import 'vite/modulepreload-polyfill'
+// Add this at the beginning of your app entry.
+import 'vite/modulepreload-polyfill';
 ```
 
 ## Usage
@@ -78,7 +78,9 @@ import 'vite/modulepreload-polyfill'
     (no ViteJS webserver and HMR) like default Django static files.
     This means that your assets must be compiled with ViteJS before.
   - This setting may be set as the same value as your `DEBUG` setting in
-    Django. But you can do what is good for yout needs.
+    Django. But you can do what is good for your needs.
+
+Note : `DJANGO_VITE_ASSETS_PATH` supports `pathlib.Path` syntax or pure `str`.
 
 ### Template tags
 
@@ -131,6 +133,23 @@ This will generate only the URL to an asset with no tag surrounding it.
 **Warning, this does not generate URLs for dependant assets of this one
 like the previous tag.**
 
+### Async, defer and custom attributes
+
+Django Vite let you customize the `async` and `defer` attributes as well
+as adding custom attributes (by default scripts are loaded with the `defer`
+attribute but not the `async` one).
+You can change this behavior by doing the following :
+
+```
+{% vite_asset '<path to your asset>' is_async=<bool> is_defer=<bool> %}
+```
+
+You can also provide custom attributes as a `dict` like so :
+
+```
+{% vite_asset '<path to your asset>' scripts_attrs=<your dict> %}
+```
+
 ## Vite Legacy Plugin
 
 If you want to consider legacy browsers that don't support ES6 modules loading
@@ -157,6 +176,8 @@ Like the previous tag, this will do nothing in development but in production,
 Django Vite will add a script tag with a `nomodule` attribute for legacy browsers.
 The path to your asset must contain de pattern `-legacy` in the file name (ex : `main-legacy.js`).
 
+This tag accepts custom attributes and `async`, `defer` customization like the default `vite_asset` tag.
+
 ## Miscellaneous configuration
 
 You can redefine those variables in your `settings.py` :
@@ -173,14 +194,14 @@ You can redefine those variables in your `settings.py` :
   to your ViteJS manifest file. This file is generated in your
   `DJANGO_VITE_ASSETS_PATH`. But if you are in production (`DEBUG` is false)
   then it is in your `STATIC_ROOT` after you collected your
-  [static files](https://docs.djangoproject.com/en/3.1/howto/static-files/).
+  [static files](https://docs.djangoproject.com/en/3.1/howto/static-files/) (supports `pathlib.Path` or `str`).
 - `DJANGO_VITE_LEGACY_POLYFILLS_MOTIF` : The motif used to find the assets for polyfills inside the `manifest.json` (only if you use [@vitejs/plugin-legacy](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy)).
 - `DJANGO_VITE_STATIC_URL_PREFIX` : prefix directory of your static files built by Vite.
   (default : `""`)
   - Use it if you want to avoid conflicts with other static files in your project.
   - It may be used with `STATICFILES_DIRS`.
   - You also need to add this prefix inside vite config's `base`.
-  e.g.:
+    e.g.:
   ```python
   # settings.py
   DJANGO_VITE_STATIC_URL_PREFIX = 'bundler'
@@ -200,10 +221,13 @@ You can redefine those variables in your `settings.py` :
   setting of Django.
 
 - If you are serving your static files with whitenoise, by default your files compiled by vite will not be considered immutable and a bad cache-control will be set. To fix this you will need to set a custom test like so:
-```
+
+```python
 import re
+
 # Vite generates files with 8 hash digits
 # http://whitenoise.evans.io/en/stable/django.html#WHITENOISE_IMMUTABLE_FILE_TEST
+
 def immutable_file_test(path, url):
     # Match filename with 12 hex digits before the extension
     # e.g. app.db8f2edc0c8a.js
