@@ -129,7 +129,7 @@ class DjangoViteAssetLoader:
 
         tags = []
         manifest_entry = self._manifest[path]
-        computed_scripts_attrs = {"type": "module"}
+        computed_scripts_attrs = {"type": "module", "crossorigin": ""}
 
         if scripts_attrs is not None:
             computed_scripts_attrs.update(scripts_attrs)
@@ -243,7 +243,7 @@ class DjangoViteAssetLoader:
         if DJANGO_VITE_DEV_MODE:
             return ""
 
-        computed_scripts_attrs = {"nomodule": ""}
+        computed_scripts_attrs = {"nomodule": "", "crossorigin": ""}
 
         if scripts_attrs is not None:
             computed_scripts_attrs.update(scripts_attrs)
@@ -303,7 +303,7 @@ class DjangoViteAssetLoader:
             )
 
         manifest_entry = self._manifest[path]
-        computed_scripts_attrs = {"nomodule": ""}
+        computed_scripts_attrs = {"nomodule": "", "crossorigin": ""}
 
         if scripts_attrs is not None:
             computed_scripts_attrs.update(scripts_attrs)
