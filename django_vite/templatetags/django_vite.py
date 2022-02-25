@@ -81,8 +81,6 @@ class DjangoViteAssetLoader:
     def generate_vite_asset(
         self,
         path: str,
-        is_defer: bool,
-        is_async: bool,
         scripts_attrs: Optional[Dict[str, str]] = None,
     ) -> str:
         """
@@ -98,10 +96,6 @@ class DjangoViteAssetLoader:
             str -- All tags to import this file in your HTML page.
 
         Keyword Arguments:
-            is_defer {bool} -- If this asset should be generated with an
-                "defer" attribute.
-            is_async {bool} -- If this asset should be generated with an
-                "async" attribute.
             scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
                 added to the script tag (does not override
                 "async" and "defer" attributes). (default: {None})
@@ -133,12 +127,6 @@ class DjangoViteAssetLoader:
 
         if scripts_attrs is not None:
             computed_scripts_attrs.update(scripts_attrs)
-
-        if is_async:
-            computed_scripts_attrs["async"] = ""
-
-        if is_defer:
-            computed_scripts_attrs["defer"] = ""
 
         # Add dependent CSS
         tags.extend(self._generate_css_files_of_asset(path, []))
@@ -263,8 +251,6 @@ class DjangoViteAssetLoader:
     def generate_vite_legacy_asset(
         self,
         path: str,
-        is_defer: bool,
-        is_async: bool,
         scripts_attrs: Optional[Dict[str, str]] = None,
     ) -> str:
         """
@@ -277,10 +263,6 @@ class DjangoViteAssetLoader:
                 (must contains '-legacy' in its name).
 
         Keyword Arguments:
-            is_defer {bool} -- If this asset should be generated with an
-                "defer" attribute.
-            is_async {bool} -- If this asset should be generated with an
-                "async" attribute.
             scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
                 added to the script tag (does not override
                 "async" and "defer" attributes). (default: {None})
@@ -307,12 +289,6 @@ class DjangoViteAssetLoader:
 
         if scripts_attrs is not None:
             computed_scripts_attrs.update(scripts_attrs)
-
-        if is_async:
-            computed_scripts_attrs["async"] = ""
-
-        if is_defer:
-            computed_scripts_attrs["defer"] = ""
 
         return DjangoViteAssetLoader._generate_script_tag(
             urljoin(DJANGO_VITE_STATIC_URL, manifest_entry["file"]),
@@ -456,8 +432,6 @@ def vite_hmr_client() -> str:
 @mark_safe
 def vite_asset(
     path: str,
-    is_defer: bool = True,
-    is_async: bool = False,
     scripts_attrs: Optional[Dict[str, str]] = None,
 ) -> str:
     """
@@ -473,10 +447,6 @@ def vite_asset(
         str -- All tags to import this file in your HTML page.
 
     Keyword Arguments:
-        is_defer {bool} -- If this asset should be generated with an
-            "defer" attribute.
-        is_async {bool} -- If this asset should be generated with an
-            "async" attribute.
         scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
             added to the script tag (does not override
             "async" and "defer" attributes). (default: {None})
@@ -493,7 +463,7 @@ def vite_asset(
     assert path is not None
 
     return DjangoViteAssetLoader.instance().generate_vite_asset(
-        path, is_defer=is_defer, is_async=is_async, scripts_attrs=scripts_attrs
+        path, scripts_attrs=scripts_attrs
     )
 
 
@@ -551,8 +521,6 @@ def vite_legacy_polyfills(
 @mark_safe
 def vite_legacy_asset(
     path: str,
-    is_defer: bool = False,
-    is_async: bool = False,
     scripts_attrs: Optional[Dict[str, str]] = None,
 ) -> str:
     """
@@ -565,10 +533,6 @@ def vite_legacy_asset(
             (must contains '-legacy' in its name).
 
     Keyword Arguments:
-        is_defer {bool} -- If this asset should be generated with an
-                "defer" attribute.
-        is_async {bool} -- If this asset should be generated with an
-            "async" attribute.
         scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
             added to the script tag (does not override
             "async" and "defer" attributes). (default: {None})
@@ -584,5 +548,5 @@ def vite_legacy_asset(
     assert path is not None
 
     return DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
-        path, is_async=is_async, is_defer=is_defer, scripts_attrs=scripts_attrs
+        path, scripts_attrs=scripts_attrs
     )
