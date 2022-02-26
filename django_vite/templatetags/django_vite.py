@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 from urllib.parse import urljoin
 
 from django import template
@@ -81,7 +81,7 @@ class DjangoViteAssetLoader:
     def generate_vite_asset(
         self,
         path: str,
-        scripts_attrs: Optional[Dict[str, str]] = None,
+        **kwargs: Dict[str, str],
     ) -> str:
         """
         Generates a <script> tag for this JS/TS asset and a <link> tag for
@@ -96,9 +96,8 @@ class DjangoViteAssetLoader:
             str -- All tags to import this file in your HTML page.
 
         Keyword Arguments:
-            scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
-                added to the script tag (does not override
-                "async" and "defer" attributes). (default: {None})
+            **kwargs {Dict[str, str]} -- Adds new attributes to generated
+                script tags.
 
         Raises:
             RuntimeError: If cannot find the file path in the
@@ -123,10 +122,7 @@ class DjangoViteAssetLoader:
 
         tags = []
         manifest_entry = self._manifest[path]
-        computed_scripts_attrs = {"type": "module", "crossorigin": ""}
-
-        if scripts_attrs is not None:
-            computed_scripts_attrs.update(scripts_attrs)
+        scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
         # Add dependent CSS
         tags.extend(self._generate_css_files_of_asset(path, []))
@@ -135,7 +131,7 @@ class DjangoViteAssetLoader:
         tags.append(
             DjangoViteAssetLoader._generate_script_tag(
                 urljoin(DJANGO_VITE_STATIC_URL, manifest_entry["file"]),
-                attrs=computed_scripts_attrs,
+                attrs=scripts_attrs,
             )
         )
 
@@ -208,7 +204,7 @@ class DjangoViteAssetLoader:
 
     def generate_vite_legacy_polyfills(
         self,
-        scripts_attrs: Optional[Dict[str, str]] = None,
+        **kwargs: Dict[str, str],
     ) -> str:
         """
         Generates a <script> tag to the polyfills
@@ -217,8 +213,8 @@ class DjangoViteAssetLoader:
         including other legacy scripts.
 
         Keyword Arguments:
-            scripts_attrs {Optional[Dict[str, str]]} -- Override
-                attributes added to scripts tags. (default: {None})
+            **kwargs {Dict[str, str]} -- Adds new attributes to generated
+                script tags.
 
         Raises:
             RuntimeError: If polyfills path not found inside
@@ -231,16 +227,13 @@ class DjangoViteAssetLoader:
         if DJANGO_VITE_DEV_MODE:
             return ""
 
-        computed_scripts_attrs = {"nomodule": "", "crossorigin": ""}
-
-        if scripts_attrs is not None:
-            computed_scripts_attrs.update(scripts_attrs)
+        scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
 
         for path, content in self._manifest.items():
             if DJANGO_VITE_LEGACY_POLYFILLS_MOTIF in path:
                 return DjangoViteAssetLoader._generate_script_tag(
                     urljoin(DJANGO_VITE_STATIC_URL, content["file"]),
-                    attrs=computed_scripts_attrs,
+                    attrs=scripts_attrs,
                 )
 
         raise RuntimeError(
@@ -251,7 +244,7 @@ class DjangoViteAssetLoader:
     def generate_vite_legacy_asset(
         self,
         path: str,
-        scripts_attrs: Optional[Dict[str, str]] = None,
+        **kwargs: Dict[str, str],
     ) -> str:
         """
         Generates a <script> tag for legacy assets JS/TS
@@ -263,9 +256,8 @@ class DjangoViteAssetLoader:
                 (must contains '-legacy' in its name).
 
         Keyword Arguments:
-            scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
-                added to the script tag (does not override
-                "async" and "defer" attributes). (default: {None})
+            **kwargs {Dict[str, str]} -- Adds new attributes to generated
+                script tags.
 
         Raises:
             RuntimeError: If cannot find the asset path in the
@@ -285,14 +277,11 @@ class DjangoViteAssetLoader:
             )
 
         manifest_entry = self._manifest[path]
-        computed_scripts_attrs = {"nomodule": "", "crossorigin": ""}
-
-        if scripts_attrs is not None:
-            computed_scripts_attrs.update(scripts_attrs)
+        scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
 
         return DjangoViteAssetLoader._generate_script_tag(
             urljoin(DJANGO_VITE_STATIC_URL, manifest_entry["file"]),
-            attrs=computed_scripts_attrs,
+            attrs=scripts_attrs,
         )
 
     def _parse_manifest(self) -> None:
@@ -355,9 +344,7 @@ class DjangoViteAssetLoader:
         )
 
     @staticmethod
-    def _generate_script_tag(
-        src: str, attrs: Optional[Dict[str, str]] = None
-    ) -> str:
+    def _generate_script_tag(src: str, attrs: Dict[str, str]) -> str:
         """
         Generates an HTML script tag.
 
@@ -365,17 +352,15 @@ class DjangoViteAssetLoader:
             src {str} -- Source of the script.
 
         Keyword Arguments:
-            attrs {Optional[Dict[str, str]]} -- List of custom attributes
-                for the tag (default: {None})
+            attrs {Dict[str, str]} -- List of custom attributes
+                for the tag.
 
         Returns:
             str -- The script tag.
         """
 
-        attrs_str = (
-            " ".join([f'{key}="{value}"' for key, value in attrs.items()])
-            if attrs is not None
-            else ""
+        attrs_str = " ".join(
+            [f'{key}="{value}"' for key, value in attrs.items()]
         )
 
         return f'<script {attrs_str} src="{src}"></script>'
@@ -395,12 +380,12 @@ class DjangoViteAssetLoader:
         return f'<link rel="stylesheet" href="{href}" />'
 
     @staticmethod
-    def _generate_vite_server_url(path: Optional[str] = None) -> str:
+    def _generate_vite_server_url(path: str) -> str:
         """
         Generates an URL to and asset served by the Vite development server.
 
         Keyword Arguments:
-            path {Optional[str]} -- Path to the asset. (default: {None})
+            path {str} -- Path to the asset.
 
         Returns:
             str -- Full URL to the asset.
@@ -409,7 +394,7 @@ class DjangoViteAssetLoader:
         return urljoin(
             f"{DJANGO_VITE_DEV_SERVER_PROTOCOL}://"
             f"{DJANGO_VITE_DEV_SERVER_HOST}:{DJANGO_VITE_DEV_SERVER_PORT}",
-            urljoin(DJANGO_VITE_STATIC_URL, path if path is not None else ""),
+            urljoin(DJANGO_VITE_STATIC_URL, path),
         )
 
 
@@ -432,7 +417,7 @@ def vite_hmr_client() -> str:
 @mark_safe
 def vite_asset(
     path: str,
-    scripts_attrs: Optional[Dict[str, str]] = None,
+    **kwargs: Dict[str, str],
 ) -> str:
     """
     Generates a <script> tag for this JS/TS asset and a <link> tag for
@@ -447,9 +432,8 @@ def vite_asset(
         str -- All tags to import this file in your HTML page.
 
     Keyword Arguments:
-        scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
-            added to the script tag (does not override
-            "async" and "defer" attributes). (default: {None})
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
 
     Raises:
         RuntimeError: If cannot find the file path in the
@@ -462,9 +446,7 @@ def vite_asset(
 
     assert path is not None
 
-    return DjangoViteAssetLoader.instance().generate_vite_asset(
-        path, scripts_attrs=scripts_attrs
-    )
+    return DjangoViteAssetLoader.instance().generate_vite_asset(path, **kwargs)
 
 
 @register.simple_tag
@@ -491,9 +473,7 @@ def vite_asset_url(path: str) -> str:
 
 @register.simple_tag
 @mark_safe
-def vite_legacy_polyfills(
-    scripts_attrs: Optional[Dict[str, str]] = None
-) -> str:
+def vite_legacy_polyfills(**kwargs: Dict[str, str]) -> str:
     """
     Generates a <script> tag to the polyfills generated
     by '@vitejs/plugin-legacy' if used.
@@ -501,8 +481,8 @@ def vite_legacy_polyfills(
     other legacy scripts.
 
     Keyword Arguments:
-        scripts_attrs {Optional[Dict[str, str]]} -- Override attributes added
-            to scripts tags. (default: {None})
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
 
     Raises:
         RuntimeError: If polyfills path not found inside
@@ -513,7 +493,7 @@ def vite_legacy_polyfills(
     """
 
     return DjangoViteAssetLoader.instance().generate_vite_legacy_polyfills(
-        scripts_attrs=scripts_attrs
+        **kwargs
     )
 
 
@@ -521,7 +501,7 @@ def vite_legacy_polyfills(
 @mark_safe
 def vite_legacy_asset(
     path: str,
-    scripts_attrs: Optional[Dict[str, str]] = None,
+    **kwargs: Dict[str, str],
 ) -> str:
     """
     Generates a <script> tag for legacy assets JS/TS
@@ -533,9 +513,8 @@ def vite_legacy_asset(
             (must contains '-legacy' in its name).
 
     Keyword Arguments:
-        scripts_attrs {Optional[Dict[str, str]]} -- Override attributes
-            added to the script tag (does not override
-            "async" and "defer" attributes). (default: {None})
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
 
     Raises:
         RuntimeError: If cannot find the asset path in
@@ -548,5 +527,5 @@ def vite_legacy_asset(
     assert path is not None
 
     return DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
-        path, scripts_attrs=scripts_attrs
+        path, **kwargs
     )
