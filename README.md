@@ -133,22 +133,30 @@ This will generate only the URL to an asset with no tag surrounding it.
 **Warning, this does not generate URLs for dependant assets of this one
 like the previous tag.**
 
-### Async, defer and custom attributes
+### Custom attributes
 
-Django Vite let you customize the `async` and `defer` attributes as well
-as adding custom attributes (by default scripts are loaded with the `defer`
-attribute but not the `async` one).
-You can change this behavior by doing the following :
+By default, all scripts tags are generated with a `type="module"` and `crossorigin=""` attributes just like ViteJS do by default if you are building a single-page app.
+You can override this behavior by adding or overriding this attributes like so :
 
 ```
-{% vite_asset '<path to your asset>' is_async=<bool> is_defer=<bool> %}
+{% vite_asset '<path to your asset>' foo="bar" hello="world" %}
 ```
 
-You can also provide custom attributes as a `dict` like so :
+This line will add `foo="bar"` and `hello="world"` attributes.
+
+You can also use context variables to fill attributes values :
 
 ```
-{% vite_asset '<path to your asset>' scripts_attrs=<your dict> %}
+{% vite_asset '<path to your asset>' foo=request.GET.bar %}
 ```
+
+If you want to overrides default attributes just add them like new attributes :
+
+```
+{% vite_asset '<path to your asset>' crossorigin="anonymous" %}
+```
+
+Although it's recommended to keep the default `type="module"` attribute as ViteJS build scripts as ES6 modules.
 
 ## Vite Legacy Plugin
 
@@ -176,7 +184,7 @@ Like the previous tag, this will do nothing in development but in production,
 Django Vite will add a script tag with a `nomodule` attribute for legacy browsers.
 The path to your asset must contain de pattern `-legacy` in the file name (ex : `main-legacy.js`).
 
-This tag accepts custom attributes and `async`, `defer` customization like the default `vite_asset` tag.
+This tag accepts overriding and adding custom attributes like the default `vite_asset` tag.
 
 ## Miscellaneous configuration
 
@@ -198,15 +206,18 @@ You can redefine those variables in your `settings.py` :
 - `DJANGO_VITE_LEGACY_POLYFILLS_MOTIF` : The motif used to find the assets for polyfills inside the `manifest.json` (only if you use [@vitejs/plugin-legacy](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy)).
 - `DJANGO_VITE_STATIC_URL_PREFIX` : prefix directory of your static files built by Vite.
   (default : `""`)
+
   - Use it if you want to avoid conflicts with other static files in your project.
   - It may be used with `STATICFILES_DIRS`.
   - You also need to add this prefix inside vite config's `base`.
     e.g.:
+
   ```python
   # settings.py
   DJANGO_VITE_STATIC_URL_PREFIX = 'bundler'
   STATICFILES_DIRS = (('bundler', '/srv/app/bundler/dist'),)
   ```
+
   ```javascript
   // vite.config.js
   export default defineConfig({
