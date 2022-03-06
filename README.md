@@ -200,7 +200,7 @@ You can redefine those variables in your `settings.py` :
   setting of Django.
 
 - If you are serving your static files with whitenoise, by default your files compiled by vite will not be considered immutable and a bad cache-control will be set. To fix this you will need to set a custom test like so:
-```
+```python
 import re
 # Vite generates files with 8 hash digits
 # http://whitenoise.evans.io/en/stable/django.html#WHITENOISE_IMMUTABLE_FILE_TEST
