@@ -1,5 +1,7 @@
 # Django Vite
 
+[![PyPI version](https://badge.fury.io/py/django-vite.svg)](https://badge.fury.io/py/django-vite)
+
 Integration of [ViteJS](https://vitejs.dev/) in a Django project.
 
 ## Installation
