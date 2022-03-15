@@ -64,8 +64,12 @@ DJANGO_VITE_LEGACY_POLYFILLS_MOTIF = getattr(
 )
 
 DJANGO_VITE_STATIC_URL = urljoin(
-    settings.STATIC_URL, DJANGO_VITE_STATIC_URL_PREFIX, ""
+    settings.STATIC_URL, DJANGO_VITE_STATIC_URL_PREFIX
 )
+
+# Make sure 'DJANGO_VITE_STATIC_URL' finish with a '/'
+if DJANGO_VITE_STATIC_URL[-1] != "/":
+    DJANGO_VITE_STATIC_URL += "/"
 
 
 class DjangoViteAssetLoader:
