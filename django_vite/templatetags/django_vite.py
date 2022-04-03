@@ -1,3 +1,5 @@
+import dataclasses
+import enum
 import json
 from pathlib import Path
 from typing import Dict, List
@@ -72,6 +74,65 @@ if DJANGO_VITE_STATIC_URL[-1] != "/":
     DJANGO_VITE_STATIC_URL += "/"
 
 
+class AssetType(enum.Enum):
+    SCRIPT = "script"
+    STYLE = "style"
+
+
+@dataclasses.dataclass
+class Asset:
+    path: str
+    asset_type: AssetType
+    attrs: Dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def __html__(self):
+        if self.asset_type == AssetType.SCRIPT:
+            return DjangoViteAssetLoader._generate_script_tag(
+                urljoin(DJANGO_VITE_STATIC_URL, self.path),
+                attrs=self.attrs,
+            )
+        elif self.asset_type == AssetType.STYLE:
+            return DjangoViteAssetLoader._generate_stylesheet_tag(
+                urljoin(DJANGO_VITE_STATIC_URL, self.path)
+            )
+
+        raise ValueError(f"Unsupported asset type {self.asset_type}")
+
+    def __str__(self):
+        return mark_safe(self.__html__())
+
+
+@dataclasses.dataclass
+class AssetsCollection:
+    assets: List[Asset] = dataclasses.field(default_factory=list)
+
+    # Using __html__ is necessary so the output is not escaped by the template
+    # engine when using `{% vite_asset %}` (which will call `conditional_escape`
+    # directly on the AssetsCollection object)
+    def __html__(self):
+        return "\n".join(asset.__html__() for asset in self.assets)
+
+    def __str__(self):
+        return mark_safe(self.__html__())
+
+    def _assets_by_type(self, asset_type: AssetType) -> "AssetsCollection":
+        return AssetsCollection(
+            assets=[
+                asset
+                for asset in self.assets
+                if asset.asset_type == asset_type
+            ]
+        )
+
+    @property
+    def styles(self):
+        return self._assets_by_type(AssetType.STYLE)
+
+    @property
+    def scripts(self):
+        return self._assets_by_type(AssetType.SCRIPT)
+
+
 class DjangoViteAssetLoader:
     """
     Class handling Vite asset loading.
@@ -86,7 +147,7 @@ class DjangoViteAssetLoader:
         self,
         path: str,
         **kwargs: Dict[str, str],
-    ) -> str:
+    ) -> AssetsCollection:
         """
         Generates a <script> tag for this JS/TS asset and a <link> tag for
         all of its CSS dependencies by reading the manifest
@@ -113,9 +174,16 @@ class DjangoViteAssetLoader:
         """
 
         if DJANGO_VITE_DEV_MODE:
-            return DjangoViteAssetLoader._generate_script_tag(
-                DjangoViteAssetLoader._generate_vite_server_url(path),
-                {"type": "module"},
+            return AssetsCollection(
+                assets=[
+                    Asset(
+                        path=DjangoViteAssetLoader._generate_vite_server_url(
+                            path
+                        ),
+                        attrs={"type": "module"},
+                        asset_type=AssetType.SCRIPT,
+                    )
+                ]
             )
 
         if not self._manifest or path not in self._manifest:
@@ -124,26 +192,24 @@ class DjangoViteAssetLoader:
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
             )
 
-        tags = []
         manifest_entry = self._manifest[path]
         scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
         # Add dependent CSS
-        tags.extend(self._generate_css_files_of_asset(path, []))
+        css_assets = self._generate_css_files_of_asset(path, [])
 
         # Add the script by itself
-        tags.append(
-            DjangoViteAssetLoader._generate_script_tag(
-                urljoin(DJANGO_VITE_STATIC_URL, manifest_entry["file"]),
-                attrs=scripts_attrs,
-            )
+        js_asset = Asset(
+            path=manifest_entry["file"],
+            asset_type=AssetType.SCRIPT,
+            attrs=scripts_attrs,
         )
 
-        return "\n".join(tags)
+        return AssetsCollection(assets=css_assets + [js_asset])
 
     def _generate_css_files_of_asset(
         self, path: str, already_processed: List[str]
-    ) -> List[str]:
+    ) -> List[Asset]:
         """
         Generates all CSS tags for dependencies of an asset.
 
@@ -170,9 +236,7 @@ class DjangoViteAssetLoader:
             for css_path in manifest_entry["css"]:
                 if css_path not in already_processed:
                     tags.append(
-                        DjangoViteAssetLoader._generate_stylesheet_tag(
-                            urljoin(DJANGO_VITE_STATIC_URL, css_path)
-                        )
+                        Asset(asset_type=AssetType.STYLE, path=css_path)
                     )
 
                 already_processed.append(css_path)
@@ -418,11 +482,10 @@ def vite_hmr_client() -> str:
 
 
 @register.simple_tag
-@mark_safe
 def vite_asset(
     path: str,
     **kwargs: Dict[str, str],
-) -> str:
+) -> AssetsCollection:
     """
     Generates a <script> tag for this JS/TS asset and a <link> tag for
     all of its CSS dependencies by reading the manifest

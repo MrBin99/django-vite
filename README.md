@@ -127,6 +127,22 @@ This will add a `<script>` tag including your JS/TS script :
 - In general, this path does not require a `/` at the beginning
   (follow your `manifest.json` file).
 
+If you want more control over the output (eg. to put the styles in the `<head>`
+tag and the scripts at the end of the `<body>` tag), you can use the `styles`
+and `scripts` properties of the template tag result:
+
+```
+<html>
+  <head>
+    {% vite_asset '<path to your asset>' as my_asset %}
+    {{ my_asset.styles }}
+  </head>
+  <body>
+    {{ my_asset.scripts }}
+  </body>
+</html>
+```
+
 ```
 {% vite_asset_url '<path to your asset>' %}
 ```
