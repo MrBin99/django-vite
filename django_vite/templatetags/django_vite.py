@@ -402,6 +402,10 @@ class DjangoViteAssetLoader:
         )
 
 
+# Make Loader instance at startup to prevent threading problems
+DjangoViteAssetLoader.instance()
+
+
 @register.simple_tag
 @mark_safe
 def vite_hmr_client() -> str:
