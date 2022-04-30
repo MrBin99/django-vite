@@ -102,7 +102,7 @@ Then in your `<head>` element add this :
 - This tag will include this script only if `DJANGO_VITE_DEV_MODE` is true,
   otherwise this will do nothing.
 
-Then add this tag to load your scripts :
+Then add this tag (in your `<head>` element too) to load your scripts :
 
 ```
 {% vite_asset '<path to your asset>' %}
