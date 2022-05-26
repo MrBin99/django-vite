@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union, Tuple
 from urllib.parse import urljoin
 
 from django import template
@@ -63,13 +63,26 @@ DJANGO_VITE_LEGACY_POLYFILLS_MOTIF = getattr(
     settings, "DJANGO_VITE_LEGACY_POLYFILLS_MOTIF", "legacy-polyfills"
 )
 
-DJANGO_VITE_STATIC_URL = urljoin(
-    settings.STATIC_URL, DJANGO_VITE_STATIC_URL_PREFIX
+DJANGO_VITE = getattr(
+    settings, "DJANGO_VITE", {
+        'default': {
+            'port': DJANGO_VITE_DEV_SERVER_PORT,
+            'manifest_path': DJANGO_VITE_MANIFEST_PATH,
+            'static_url_prefix': DJANGO_VITE_STATIC_URL_PREFIX,
+            'dev_mode': DJANGO_VITE_DEV_MODE,
+        }
+    }
 )
 
-# Make sure 'DJANGO_VITE_STATIC_URL' finish with a '/'
-if DJANGO_VITE_STATIC_URL[-1] != "/":
-    DJANGO_VITE_STATIC_URL += "/"
+
+def get_django_vite_static_url(static_url_prefix: str) -> str:
+    static_url = urljoin(settings.STATIC_URL, static_url_prefix)
+
+    # Make sure 'static_url' finish with a '/'
+    if static_url[-1] != "/":
+        static_url += "/"
+
+    return static_url
 
 
 class DjangoViteAssetLoader:
@@ -85,6 +98,10 @@ class DjangoViteAssetLoader:
     def generate_vite_asset(
         self,
         path: str,
+        manifest_path: str,
+        port: int,
+        static_url_prefix: str,
+        dev_mode: bool,
         **kwargs: Dict[str, str],
     ) -> str:
         """
@@ -112,29 +129,29 @@ class DjangoViteAssetLoader:
                 this asset in your page.
         """
 
-        if DJANGO_VITE_DEV_MODE:
+        if dev_mode:
             return DjangoViteAssetLoader._generate_script_tag(
-                DjangoViteAssetLoader._generate_vite_server_url(path),
+                DjangoViteAssetLoader._generate_vite_server_url(path, port, static_url_prefix),
                 {"type": "module"},
             )
 
-        if not self._manifest or path not in self._manifest:
+        if not self._manifests[manifest_path] or path not in self._manifests[manifest_path]:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
-                f"at {DJANGO_VITE_MANIFEST_PATH}"
+                f"at {manifest_path}"
             )
 
         tags = []
-        manifest_entry = self._manifest[path]
+        manifest_entry = self._manifests[manifest_path][path]
         scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
         # Add dependent CSS
-        tags.extend(self._generate_css_files_of_asset(path, []))
+        tags.extend(self._generate_css_files_of_asset(path, manifest_path, static_url_prefix, []))
 
         # Add the script by itself
         tags.append(
             DjangoViteAssetLoader._generate_script_tag(
-                urljoin(DJANGO_VITE_STATIC_URL, manifest_entry["file"]),
+                urljoin(get_django_vite_static_url(static_url_prefix), manifest_entry["file"]),
                 attrs=scripts_attrs,
             )
         )
@@ -142,7 +159,7 @@ class DjangoViteAssetLoader:
         return "\n".join(tags)
 
     def _generate_css_files_of_asset(
-        self, path: str, already_processed: List[str]
+        self, path: str, manifest_path: str, static_url_prefix: str, already_processed: List[str]
     ) -> List[str]:
         """
         Generates all CSS tags for dependencies of an asset.
@@ -156,13 +173,13 @@ class DjangoViteAssetLoader:
         """
 
         tags = []
-        manifest_entry = self._manifest[path]
+        manifest_entry = self._manifests[manifest_path][path]
 
         if "imports" in manifest_entry:
             for import_path in manifest_entry["imports"]:
                 tags.extend(
                     self._generate_css_files_of_asset(
-                        import_path, already_processed
+                        import_path, manifest_path, static_url_prefix, already_processed
                     )
                 )
 
@@ -171,7 +188,7 @@ class DjangoViteAssetLoader:
                 if css_path not in already_processed:
                     tags.append(
                         DjangoViteAssetLoader._generate_stylesheet_tag(
-                            urljoin(DJANGO_VITE_STATIC_URL, css_path)
+                            urljoin(get_django_vite_static_url(static_url_prefix), css_path)
                         )
                     )
 
@@ -179,7 +196,7 @@ class DjangoViteAssetLoader:
 
         return tags
 
-    def generate_vite_asset_url(self, path: str) -> str:
+    def generate_vite_asset_url(self, path: str, manifest_path: str, port: int, static_url_prefix: str, dev_mode: bool) -> str:
         """
         Generates only the URL of an asset managed by ViteJS.
         Warning, this function does not generate URLs for dependant assets.
@@ -195,19 +212,22 @@ class DjangoViteAssetLoader:
             str -- The URL of this asset.
         """
 
-        if DJANGO_VITE_DEV_MODE:
-            return DjangoViteAssetLoader._generate_vite_server_url(path)
+        if dev_mode:
+            return DjangoViteAssetLoader._generate_vite_server_url(path, port, static_url_prefix)
 
-        if not self._manifest or path not in self._manifest:
+        if not self._manifests or path not in self._manifests[manifest_path]:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
-                f"at {DJANGO_VITE_MANIFEST_PATH}"
+                f"at {manifest_path}"
             )
 
-        return urljoin(DJANGO_VITE_STATIC_URL, self._manifest[path]["file"])
+        return urljoin(get_django_vite_static_url(static_url_prefix), self._manifests[manifest_path][path]["file"])
 
     def generate_vite_legacy_polyfills(
         self,
+        manifest_path: str,
+        static_url_prefix: str,
+        dev_mode: bool,
         **kwargs: Dict[str, str],
     ) -> str:
         """
@@ -228,26 +248,29 @@ class DjangoViteAssetLoader:
             str -- The script tag to the polyfills.
         """
 
-        if DJANGO_VITE_DEV_MODE:
+        if dev_mode:
             return ""
 
         scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
 
-        for path, content in self._manifest.items():
+        for path, content in self._manifests[manifest_path].items():
             if DJANGO_VITE_LEGACY_POLYFILLS_MOTIF in path:
                 return DjangoViteAssetLoader._generate_script_tag(
-                    urljoin(DJANGO_VITE_STATIC_URL, content["file"]),
+                    urljoin(get_django_vite_static_url(static_url_prefix), content["file"]),
                     attrs=scripts_attrs,
                 )
 
         raise RuntimeError(
             f"Vite legacy polyfills not found in manifest "
-            f"at {DJANGO_VITE_MANIFEST_PATH}"
+            f"at {manifest_path}"
         )
 
     def generate_vite_legacy_asset(
         self,
         path: str,
+        manifest_path: str,
+        static_url_prefix: str,
+        dev_mode: bool,
         **kwargs: Dict[str, str],
     ) -> str:
         """
@@ -271,24 +294,24 @@ class DjangoViteAssetLoader:
             str -- The script tag of this legacy asset .
         """
 
-        if DJANGO_VITE_DEV_MODE:
+        if dev_mode:
             return ""
 
-        if not self._manifest or path not in self._manifest:
+        if not self._manifests or path not in self._manifests[manifest_path]:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
             )
 
-        manifest_entry = self._manifest[path]
+        manifest_entry = self._manifests[manifest_path][path]
         scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
 
         return DjangoViteAssetLoader._generate_script_tag(
-            urljoin(DJANGO_VITE_STATIC_URL, manifest_entry["file"]),
+            urljoin(get_django_vite_static_url(static_url_prefix), manifest_entry["file"]),
             attrs=scripts_attrs,
         )
 
-    def _parse_manifest(self) -> None:
+    def _parse_manifest(self, manifest_path) -> None:
         """
         Read and parse the Vite manifest file.
 
@@ -297,18 +320,18 @@ class DjangoViteAssetLoader:
         """
 
         try:
-            manifest_file = open(DJANGO_VITE_MANIFEST_PATH, "r")
+            manifest_file = open(manifest_path, "r")
             manifest_content = manifest_file.read()
             manifest_file.close()
-            self._manifest = json.loads(manifest_content)
+            self._manifests[manifest_path] = json.loads(manifest_content)
         except Exception as error:
             raise RuntimeError(
                 f"Cannot read Vite manifest file at "
-                f"{DJANGO_VITE_MANIFEST_PATH} : {str(error)}"
+                f"{manifest_path} : {str(error)}"
             )
 
     @classmethod
-    def instance(cls):
+    def instance(cls, manifest_path: str = DJANGO_VITE_MANIFEST_PATH, dev_mode: bool = DJANGO_VITE_DEV_MODE):
         """
         Singleton.
         Uses singleton to keep parsed manifest in memory after
@@ -320,16 +343,16 @@ class DjangoViteAssetLoader:
 
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
-            cls._instance._manifest = None
+            cls._instance._manifests = {}
 
-            # Manifest is only used in production.
-            if not DJANGO_VITE_DEV_MODE:
-                cls._instance._parse_manifest()
+        # Manifest is only used in production.
+        if not dev_mode and manifest_path not in cls._instance._manifests:
+            cls._instance._parse_manifest(manifest_path)
 
         return cls._instance
 
     @classmethod
-    def generate_vite_ws_client(cls) -> str:
+    def generate_vite_ws_client(cls, port: int, static_url_prefix: str, dev_mode: bool) -> str:
         """
         Generates the script tag for the Vite WS client for HMR.
         Only used in development, in production this method returns
@@ -339,11 +362,11 @@ class DjangoViteAssetLoader:
             str -- The script tag or an empty string.
         """
 
-        if not DJANGO_VITE_DEV_MODE:
+        if not dev_mode:
             return ""
 
         return cls._generate_script_tag(
-            cls._generate_vite_server_url(DJANGO_VITE_WS_CLIENT_URL),
+            cls._generate_vite_server_url(DJANGO_VITE_WS_CLIENT_URL, port, static_url_prefix),
             {"type": "module"},
         )
 
@@ -384,7 +407,7 @@ class DjangoViteAssetLoader:
         return f'<link rel="stylesheet" href="{href}" />'
 
     @staticmethod
-    def _generate_vite_server_url(path: str) -> str:
+    def _generate_vite_server_url(path: str, port: int, static_url_prefix: str) -> str:
         """
         Generates an URL to and asset served by the Vite development server.
 
@@ -397,8 +420,8 @@ class DjangoViteAssetLoader:
 
         return urljoin(
             f"{DJANGO_VITE_DEV_SERVER_PROTOCOL}://"
-            f"{DJANGO_VITE_DEV_SERVER_HOST}:{DJANGO_VITE_DEV_SERVER_PORT}",
-            urljoin(DJANGO_VITE_STATIC_URL, path),
+            f"{DJANGO_VITE_DEV_SERVER_HOST}:{port}",
+            urljoin(get_django_vite_static_url(static_url_prefix), path),
         )
 
 
@@ -406,9 +429,23 @@ class DjangoViteAssetLoader:
 DjangoViteAssetLoader.instance()
 
 
+def get_config(config: Union[str, dict]) -> Tuple[str, int, str, bool]:
+    if isinstance(config, str):
+        if config not in DJANGO_VITE:
+            raise RuntimeError(f"Config \"{config}\" is not found in DJANGO_VITE")
+
+        config = DJANGO_VITE[config]
+
+    manifest_path = config['manifest_path']
+    port = config['port']
+    static_url_prefix = config['static_url_prefix']
+    dev_mode = config['dev_mode']
+    return manifest_path, port, static_url_prefix, dev_mode
+
+
 @register.simple_tag
 @mark_safe
-def vite_hmr_client() -> str:
+def vite_hmr_client(config: Union[str, dict] = 'default') -> str:
     """
     Generates the script tag for the Vite WS client for HMR.
     Only used in development, in production this method returns
@@ -418,15 +455,14 @@ def vite_hmr_client() -> str:
         str -- The script tag or an empty string.
     """
 
-    return DjangoViteAssetLoader.generate_vite_ws_client()
+    manifest_path, port, static_url_prefix, dev_mode = get_config(config)
+
+    return DjangoViteAssetLoader.generate_vite_ws_client(port, static_url_prefix, dev_mode)
 
 
 @register.simple_tag
 @mark_safe
-def vite_asset(
-    path: str,
-    **kwargs: Dict[str, str],
-) -> str:
+def vite_asset(path: str, config: Union[str, dict] = 'default', **kwargs: Dict[str, str]) -> str:
     """
     Generates a <script> tag for this JS/TS asset and a <link> tag for
     all of its CSS dependencies by reading the manifest
@@ -454,11 +490,13 @@ def vite_asset(
 
     assert path is not None
 
-    return DjangoViteAssetLoader.instance().generate_vite_asset(path, **kwargs)
+    manifest_path, port, static_url_prefix, dev_mode = get_config(config)
+
+    return DjangoViteAssetLoader.instance(manifest_path, dev_mode).generate_vite_asset(path, manifest_path, port, static_url_prefix, dev_mode, **kwargs)
 
 
 @register.simple_tag
-def vite_asset_url(path: str) -> str:
+def vite_asset_url(path: str, config: Union[str, dict] = 'default') -> str:
     """
     Generates only the URL of an asset managed by ViteJS.
     Warning, this function does not generate URLs for dependant assets.
@@ -476,12 +514,14 @@ def vite_asset_url(path: str) -> str:
 
     assert path is not None
 
-    return DjangoViteAssetLoader.instance().generate_vite_asset_url(path)
+    manifest_path, port, static_url_prefix, dev_mode = get_config(config)
+
+    return DjangoViteAssetLoader.instance(manifest_path, dev_mode).generate_vite_asset_url(path, manifest_path, port, static_url_prefix, dev_mode)
 
 
 @register.simple_tag
 @mark_safe
-def vite_legacy_polyfills(**kwargs: Dict[str, str]) -> str:
+def vite_legacy_polyfills(config: Union[str, dict] = 'default', **kwargs: Dict[str, str]) -> str:
     """
     Generates a <script> tag to the polyfills generated
     by '@vitejs/plugin-legacy' if used.
@@ -500,17 +540,14 @@ def vite_legacy_polyfills(**kwargs: Dict[str, str]) -> str:
         str -- The script tag to the polyfills.
     """
 
-    return DjangoViteAssetLoader.instance().generate_vite_legacy_polyfills(
-        **kwargs
-    )
+    manifest_path, port, static_url_prefix, dev_mode = get_config(config)
+
+    return DjangoViteAssetLoader.instance(manifest_path, dev_mode).generate_vite_legacy_polyfills(manifest_path, static_url_prefix, dev_mode, **kwargs)
 
 
 @register.simple_tag
 @mark_safe
-def vite_legacy_asset(
-    path: str,
-    **kwargs: Dict[str, str],
-) -> str:
+def vite_legacy_asset(path: str, config: Union[str, dict] = 'default', **kwargs: Dict[str, str]) -> str:
     """
     Generates a <script> tag for legacy assets JS/TS
     generated by '@vitejs/plugin-legacy'
@@ -534,6 +571,8 @@ def vite_legacy_asset(
 
     assert path is not None
 
-    return DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
-        path, **kwargs
+    manifest_path, port, static_url_prefix, dev_mode = get_config(config)
+
+    return DjangoViteAssetLoader.instance(manifest_path, dev_mode).generate_vite_legacy_asset(
+        path, manifest_path, static_url_prefix, dev_mode, **kwargs
     )
