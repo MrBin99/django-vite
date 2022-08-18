@@ -138,7 +138,7 @@ like the previous tag.**
 ```
 {% vite_react_refresh %}
 ```
-If you're using React, this will generate the Javascript needed to support React HMR. 
+If you're using React, this will generate the Javascript needed to support React HMR.
 
 ### Custom attributes
 

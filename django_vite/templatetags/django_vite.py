@@ -404,14 +404,24 @@ class DjangoViteAssetLoader:
             f"{DJANGO_VITE_DEV_SERVER_HOST}:{DJANGO_VITE_DEV_SERVER_PORT}",
             urljoin(DJANGO_VITE_STATIC_URL, path),
         )
-    
+
     @classmethod
     def generate_vite_react_refresh_url(cls) -> str:
+        """
+        Generates the script for the Vite React Refresh for HMR.
+        Only used in development, in production this method returns
+        an empty string.
+
+        Returns:
+            str -- The script or an empty string.
+        """
+
         if not DJANGO_VITE_DEV_MODE:
             return ""
 
         return f"""<script type="module">
-            import RefreshRuntime from '{cls._generate_vite_server_url(DJANGO_VITE_REACT_REFRESH_URL)}'
+            import RefreshRuntime from \
+            '{cls._generate_vite_server_url(DJANGO_VITE_REACT_REFRESH_URL)}'
             RefreshRuntime.injectIntoGlobalHook(window)
             window.$RefreshReg$ = () => {{}}
             window.$RefreshSig$ = () => (type) => type
@@ -555,7 +565,16 @@ def vite_legacy_asset(
         path, **kwargs
     )
 
+
 @register.simple_tag
 @mark_safe
 def vite_react_refresh() -> str:
+    """
+    Generates the script for the Vite React Refresh for HMR.
+    Only used in development, in production this method returns
+    an empty string.
+
+    Returns:
+        str -- The script or an empty string.
+    """
     return DjangoViteAssetLoader.generate_vite_react_refresh_url()
