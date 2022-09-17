@@ -146,6 +146,24 @@ class DjangoViteAssetLoader:
             )
         )
 
+        # Preload imports
+        preload_attrs = {
+            "type": "text/javascript",
+            "crossorigin": "anonymous",
+            "rel": "modulepreload",
+            "as": "script",
+        }
+
+        for dep in manifest_entry.get("imports", []):
+            dep_manifest_entry = self._manifest[dep]
+            dep_file = dep_manifest_entry["file"]
+            tags.append(
+                DjangoViteAssetLoader._generate_preload_tag(
+                    urljoin(DJANGO_VITE_STATIC_URL, dep_file),
+                    attrs=preload_attrs,
+                )
+            )
+
         return "\n".join(tags)
 
     def _generate_css_files_of_asset(
@@ -402,6 +420,14 @@ class DjangoViteAssetLoader:
         """
 
         return f'<link rel="stylesheet" href="{href}" />'
+
+    @staticmethod
+    def _generate_preload_tag(href: str, attrs: Dict[str, str]) -> str:
+        attrs_str = " ".join(
+            [f'{key}="{value}"' for key, value in attrs.items()]
+        )
+
+        return f'<link href="{href}" {attrs_str} />'
 
     @staticmethod
     def _generate_vite_server_url(path: str) -> str:
