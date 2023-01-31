@@ -16,6 +16,7 @@ setup(
     long_description_content_type="text/markdown",
     author="MrBin99",
     url="https://github.com/MrBin99/django-vite",
+    license="Apache License, Version 2.0",
     include_package_data=True,
     packages=find_packages(),
     requires=[
@@ -23,6 +24,9 @@ setup(
     ],
     install_requires=[
         "Django>=1.11",
+    ],
+    classifiers=[
+        "License :: OSI Approved :: Apache Software License",
     ],
     extras_require={"dev": ["black", "flake8"]},
 )
