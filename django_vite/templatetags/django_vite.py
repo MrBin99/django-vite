@@ -115,7 +115,7 @@ class DjangoViteAssetLoader:
         if DJANGO_VITE_DEV_MODE:
             return DjangoViteAssetLoader._generate_script_tag(
                 DjangoViteAssetLoader._generate_vite_server_url(path),
-                {"type": "module"},
+                {"type": "module", **kwargs},
             )
 
         if not self._manifest or path not in self._manifest:
@@ -329,7 +329,7 @@ class DjangoViteAssetLoader:
         return cls._instance
 
     @classmethod
-    def generate_vite_ws_client(cls) -> str:
+    def generate_vite_ws_client(cls, **kwargs: Dict[str, str]) -> str:
         """
         Generates the script tag for the Vite WS client for HMR.
         Only used in development, in production this method returns
@@ -337,6 +337,10 @@ class DjangoViteAssetLoader:
 
         Returns:
             str -- The script tag or an empty string.
+
+        Keyword Arguments:
+            **kwargs {Dict[str, str]} -- Adds new attributes to generated
+                script tags.
         """
 
         if not DJANGO_VITE_DEV_MODE:
@@ -344,7 +348,7 @@ class DjangoViteAssetLoader:
 
         return cls._generate_script_tag(
             cls._generate_vite_server_url(DJANGO_VITE_WS_CLIENT_URL),
-            {"type": "module"},
+            {"type": "module", **kwargs},
         )
 
     @staticmethod
@@ -408,7 +412,7 @@ DjangoViteAssetLoader.instance()
 
 @register.simple_tag
 @mark_safe
-def vite_hmr_client() -> str:
+def vite_hmr_client(**kwargs: Dict[str, str]) -> str:
     """
     Generates the script tag for the Vite WS client for HMR.
     Only used in development, in production this method returns
@@ -416,9 +420,13 @@ def vite_hmr_client() -> str:
 
     Returns:
         str -- The script tag or an empty string.
+
+    Keyword Arguments:
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
     """
 
-    return DjangoViteAssetLoader.generate_vite_ws_client()
+    return DjangoViteAssetLoader.generate_vite_ws_client(**kwargs)
 
 
 @register.simple_tag
