@@ -452,9 +452,14 @@ def vite_asset(
             asset in your page.
     """
 
-    return "".join([
-        DjangoViteAssetLoader.instance().generate_vite_asset(path, **kwargs) for path in paths
-    ])
+    return "".join(
+        [
+            DjangoViteAssetLoader.instance().generate_vite_asset(
+                path, **kwargs
+            )
+            for path in paths
+        ]
+    )
 
 
 @register.simple_tag
@@ -532,8 +537,11 @@ def vite_legacy_asset(
         str -- The script tag of this legacy asset .
     """
 
-    return "".join([
-        DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
-            path, **kwargs
-        ) for path in paths
-    ])
+    return "".join(
+        [
+            DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
+                path, **kwargs
+            )
+            for path in paths
+        ]
+    )
