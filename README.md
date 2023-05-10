@@ -135,6 +135,11 @@ This will generate only the URL to an asset with no tag surrounding it.
 **Warning, this does not generate URLs for dependant assets of this one
 like the previous tag.**
 
+```
+{% vite_react_refresh %}
+```
+If you're using React, this will generate the Javascript needed to support React HMR.
+
 ### Custom attributes
 
 By default, all scripts tags are generated with a `type="module"` and `crossorigin=""` attributes just like ViteJS do by default if you are building a single-page app.
