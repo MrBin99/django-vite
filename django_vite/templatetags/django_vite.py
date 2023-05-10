@@ -33,6 +33,9 @@ DJANGO_VITE_WS_CLIENT_URL = getattr(
     settings, "DJANGO_VITE_WS_CLIENT_URL", "@vite/client"
 )
 
+DJANGO_VITE_REACT_REFRESH_URL = getattr(
+    settings, "DJANGO_VITE_REACT_REFRESH_URL", "@react-refresh"
+)
 # Location of Vite compiled assets (only used in Vite production mode).
 # Must be included in your "STATICFILES_DIRS".
 # In Django production mode this folder need to be collected as static
@@ -401,6 +404,29 @@ class DjangoViteAssetLoader:
             urljoin(DJANGO_VITE_STATIC_URL, path),
         )
 
+    @classmethod
+    def generate_vite_react_refresh_url(cls) -> str:
+        """
+        Generates the script for the Vite React Refresh for HMR.
+        Only used in development, in production this method returns
+        an empty string.
+
+        Returns:
+            str -- The script or an empty string.
+        """
+
+        if not DJANGO_VITE_DEV_MODE:
+            return ""
+
+        return f"""<script type="module">
+            import RefreshRuntime from \
+            '{cls._generate_vite_server_url(DJANGO_VITE_REACT_REFRESH_URL)}'
+            RefreshRuntime.injectIntoGlobalHook(window)
+            window.$RefreshReg$ = () => {{}}
+            window.$RefreshSig$ = () => (type) => type
+            window.__vite_plugin_react_preamble_installed__ = true
+        </script>"""
+
 
 # Make Loader instance at startup to prevent threading problems
 DjangoViteAssetLoader.instance()
@@ -537,3 +563,17 @@ def vite_legacy_asset(
     return DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
         path, **kwargs
     )
+
+
+@register.simple_tag
+@mark_safe
+def vite_react_refresh() -> str:
+    """
+    Generates the script for the Vite React Refresh for HMR.
+    Only used in development, in production this method returns
+    an empty string.
+
+    Returns:
+        str -- The script or an empty string.
+    """
+    return DjangoViteAssetLoader.generate_vite_react_refresh_url()
