@@ -1,1 +1,5 @@
 __pycache__/
+.tox
+.vscode
+.coverage
+*.egg-info
