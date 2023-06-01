@@ -466,10 +466,6 @@ class DjangoViteAssetLoader:
             return urljoin(DJANGO_VITE_STATIC_URL_PREFIX, path)
 
 
-# Make Loader instance at startup to prevent threading problems
-DjangoViteAssetLoader.instance()
-
-
 @register.simple_tag
 @mark_safe
 def vite_hmr_client(**kwargs: Dict[str, str]) -> str:
