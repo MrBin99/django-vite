@@ -11,7 +11,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 setup(
     name="django-vite",
     version="2.1.2",
-    description="Integration of ViteJS in a Django project.",
+    description="Integration of Vite in a Django project.",
     long_description=README,
     long_description_content_type="text/markdown",
     author="MrBin99",
@@ -20,13 +20,23 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     requires=[
-        "Django (>=1.11)",
+        "Django (>=3.2)",
     ],
     install_requires=[
-        "Django>=1.11",
+        "Django>=3.2",
     ],
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
+        "Framework :: Django",
+        "Framework :: Django :: 3.2",
+        "Framework :: Django :: 4.0",
+        "Framework :: Django :: 4.1",
+        "Framework :: Django :: 4.2",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
-    extras_require={"dev": ["black", "flake8"]},
+    extras_require={"dev": ["black"]},
 )
