@@ -24,6 +24,7 @@ setup(
     ],
     install_requires=[
         "Django>=1.11",
+        "django-appconf >= 1.0.5",
     ],
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
