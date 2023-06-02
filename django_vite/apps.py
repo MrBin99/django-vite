@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 from django.apps import AppConfig
 from django.core.checks import Warning, register
 
@@ -9,12 +11,10 @@ class DjangoViteAppConfig(AppConfig):
     verbose_name = "Django Vite"
 
     def ready(self) -> None:
-        try:
-            # Create Loader instance at startup to prevent threading problems.
+        with suppress(RuntimeError):
+            # Create Loader instance at startup to prevent threading problems,
+            # but do not crash while doing so.
             DjangoViteAssetLoader.instance()
-        except RuntimeError:
-            # Just continue, the system check below outputs a warning.
-            pass
 
 
 @register
