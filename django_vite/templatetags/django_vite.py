@@ -157,9 +157,12 @@ class DjangoViteAssetLoader:
         for dep in manifest_entry.get("imports", []):
             dep_manifest_entry = self._manifest[dep]
             dep_file = dep_manifest_entry["file"]
+            url = DjangoViteAssetLoader._generate_production_server_url(
+                dep_file
+            )
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
-                    urljoin(DJANGO_VITE_STATIC_URL, dep_file),
+                    url,
                     attrs=preload_attrs,
                 )
             )
@@ -211,9 +214,13 @@ class DjangoViteAssetLoader:
             "as": "script",
         }
 
+        manifest_file = manifest_entry["file"]
+        url = DjangoViteAssetLoader._generate_production_server_url(
+            manifest_file
+        )
         tags.append(
             DjangoViteAssetLoader._generate_preload_tag(
-                urljoin(DJANGO_VITE_STATIC_URL, manifest_entry["file"]),
+                url,
                 attrs=script_attrs,
             )
         )
@@ -225,9 +232,12 @@ class DjangoViteAssetLoader:
         for dep in manifest_entry.get("imports", []):
             dep_manifest_entry = self._manifest[dep]
             dep_file = dep_manifest_entry["file"]
+            url = DjangoViteAssetLoader._generate_production_server_url(
+                dep_file
+            )
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
-                    urljoin(DJANGO_VITE_STATIC_URL, dep_file),
+                    url,
                     attrs=script_attrs,
                 )
             )
@@ -285,9 +295,7 @@ class DjangoViteAssetLoader:
                             css_path
                         )
                     )
-                    tags.append(
-                        tag_generator(url)
-                    )
+                    tags.append(tag_generator(url))
 
                 already_processed.append(css_path)
 
