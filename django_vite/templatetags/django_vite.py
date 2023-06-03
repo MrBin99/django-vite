@@ -94,8 +94,9 @@ class DjangoViteAssetLoader:
     ) -> str:
         """
         Generates a <script> tag for this JS/TS asset, a <link> tag for
-        all of its CSS dependencies, prelodemodule for the js dependencies
-        by reading the manifest file (for production only).
+        all of its CSS dependencies, and a <link modulepreload>
+        for the js dependencies, as listed in the manifest file
+        (for production only).
         In development Vite loads all by itself.
 
         Arguments:
