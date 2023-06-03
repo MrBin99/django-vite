@@ -173,8 +173,9 @@ class DjangoViteAssetLoader:
         """
         Generates a <link modulepreload> tag for this JS/TS asset, a
         <link preload> tag for all of its CSS dependencies,
-        and a prelodule module for the js dependencies.
-        In development does nothing, since files aren't compiled yet"
+        and a <link modulepreload> for the js dependencies.
+        In development this template tag renders nothing,
+        since files aren't compiled yet"
 
         Arguments:
             path {str} -- Path to a Vite JS/TS asset to preload.
@@ -620,9 +621,9 @@ def vite_asset(
     **kwargs: Dict[str, str],
 ) -> str:
     """
-    Generates a <script> tag for this JS/TS asset and a <link> tag for
-    all of its CSS dependencies by reading the manifest
-    file (for production only).
+    Generates a <script> tag for this JS/TS asset, a <link> tag for
+    all of its CSS dependencies, and a <link rel="modulepreload">
+    for all js dependencies, as listed in the manifest file
     In development Vite loads all by itself.
 
     Arguments:
