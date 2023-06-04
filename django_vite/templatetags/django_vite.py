@@ -123,7 +123,12 @@ class DjangoViteAssetLoader:
                 {"type": "module", **kwargs},
             )
 
-        if not self._manifest or path not in self._manifest:
+        if not self._manifest:
+            raise RuntimeError(
+                f"Cannot find Vite manifest at {DJANGO_VITE_MANIFEST_PATH}"
+            )
+
+        if path not in self._manifest:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
