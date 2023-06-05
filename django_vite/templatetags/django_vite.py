@@ -622,10 +622,7 @@ def vite_react_refresh() -> str:
 
 @register.simple_tag
 @mark_safe
-def vite_dev_asset(
-    path: str,
-    **kwargs
-) -> str:
+def vite_dev_asset(path: str, **kwargs) -> str:
     """
     Generates a <script> tag which loads the asset from the Vite
     along with any CSS dependencies if DJANGO_VITE_DEV_MODE is
