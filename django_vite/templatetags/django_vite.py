@@ -618,3 +618,68 @@ def vite_react_refresh() -> str:
         str -- The script or an empty string.
     """
     return DjangoViteAssetLoader.generate_vite_react_refresh_url()
+
+
+@register.simple_tag
+@mark_safe
+def vite_dev_asset(
+    path: str,
+    **kwargs
+) -> str:
+    """
+    Generates a <script> tag which loads the asset from the Vite
+    along with any CSS dependencies if DJANGO_VITE_DEV_MODE is
+    True.
+
+    Arguments:
+        path {str} -- Path to a Vite JS/TS asset to include.
+
+    Returns:
+        str -- All tags to import this file in your HTML page.
+
+    Keyword Arguments:
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
+
+    Raises:
+        RuntimeError: If cannot find the file path in the
+            manifest (only in production).
+
+    Returns:
+        str -- The <script> tag and all <link> tags to import
+            this asset in your page.
+    """
+    assert path is not None
+
+    if not DJANGO_VITE_DEV_MODE:
+        return ""
+
+    return DjangoViteAssetLoader.instance().generate_vite_asset(path, **kwargs)
+
+
+@register.simple_tag
+@mark_safe
+def vite_dev_asset_url(
+    path: str,
+) -> str:
+    """
+    Generates only the URL of an asset managed by ViteJS if
+    DJANGO_VITE_DEV_MODE is True.
+    Warning, this function does not generate URLs for dependant assets.
+
+    Arguments:
+        path {str} -- Path to a Vite asset.
+
+    Raises:
+        RuntimeError: If cannot find the asset path in the
+            manifest (only in production).
+
+    Returns:
+        str -- The URL of this asset.
+    """
+    assert path is not None
+
+    if not DJANGO_VITE_DEV_MODE:
+        return ""
+
+    return DjangoViteAssetLoader.instance().generate_vite_asset_url(path)
