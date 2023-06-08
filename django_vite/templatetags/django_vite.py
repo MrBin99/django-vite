@@ -591,10 +591,11 @@ class DjangoViteAssetLoader:
             str -- Full URL to the asset.
         """
 
-        prefix = DJANGO_VITE_STATIC_URL_PREFIX
-        if not DJANGO_VITE_STATIC_URL_PREFIX.endswith("/"):
-            prefix += "/"
-        production_server_url = urljoin(prefix, path)
+        production_server_url = path
+        if prefix := DJANGO_VITE_STATIC_URL_PREFIX:
+            if not DJANGO_VITE_STATIC_URL_PREFIX.endswith("/"):
+                prefix += "/"
+            production_server_url = urljoin(prefix, path)
 
         if apps.is_installed("django.contrib.staticfiles"):
             from django.contrib.staticfiles.storage import staticfiles_storage
