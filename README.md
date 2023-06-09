@@ -165,6 +165,15 @@ If you want to overrides default attributes just add them like new attributes :
 
 Although it's recommended to keep the default `type="module"` attribute as ViteJS build scripts as ES6 modules.
 
+### Dev only assets
+
+If you only want to render an asset when `DJANGO_VITE_DEV_MODE` is `True`, then you
+can add `dev_only=True` to the `vite_asset` tag.
+
+```
+{% vite_asset '<path to your asset>' dev_only=True %}
+```
+
 ## Vite Legacy Plugin
 
 If you want to consider legacy browsers that don't support ES6 modules loading
