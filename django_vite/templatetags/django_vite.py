@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Type, Union
+from typing import Dict, List, Callable, NamedTuple, Optional, Type, Union
 from urllib.parse import urljoin
 
 from django import template
+from django.apps import apps
 from django.conf import settings
 from django.utils.safestring import mark_safe
 
@@ -105,9 +106,10 @@ class DjangoViteAssetLoader:
         **kwargs: Dict[str, str],
     ) -> str:
         """
-        Generates a <script> tag for this JS/TS asset and a <link> tag for
-        all of its CSS dependencies by reading the manifest
-        file (for production only).
+        Generates a <script> tag for this JS/TS asset, a <link> tag for
+        all of its CSS dependencies, and a <link modulepreload>
+        for the js dependencies, as listed in the manifest file
+        (for production only).
         In development Vite loads all by itself.
 
         Arguments:
@@ -138,7 +140,7 @@ class DjangoViteAssetLoader:
                 DjangoViteAssetLoader._generate_vite_server_url(
                     path, static_url, config
                 ),
-                {"type": "module"},
+                {"type": "module", **kwargs},
             )
 
         manifest = self._get_manifest(config_key)
@@ -162,6 +164,27 @@ class DjangoViteAssetLoader:
                 attrs=scripts_attrs,
             )
         )
+
+        # Preload imports
+        preload_attrs = {
+            "type": "text/javascript",
+            "crossorigin": "anonymous",
+            "rel": "modulepreload",
+            "as": "script",
+        }
+
+        for dep in manifest.imports:
+            dep_manifest_entry = self._manifest[dep]
+            dep_file = dep_manifest_entry["file"]
+            url = DjangoViteAssetLoader._generate_production_server_url(
+                dep_file
+            )
+            tags.append(
+                DjangoViteAssetLoader._generate_preload_tag(
+                    url,
+                    attrs=preload_attrs,
+                )
+            )
 
         return "\n".join(tags)
 
@@ -207,6 +230,139 @@ class DjangoViteAssetLoader:
 
         return tags
 
+    def preload_vite_asset(
+        self,
+        path: str,
+    ) -> str:
+        """
+        Generates a <link modulepreload> tag for this JS/TS asset, a
+        <link preload> tag for all of its CSS dependencies,
+        and a <link modulepreload> for the js dependencies.
+        In development this template tag renders nothing,
+        since files aren't compiled yet"
+
+        Arguments:
+            path {str} -- Path to a Vite JS/TS asset to preload.
+
+        Returns:
+            str -- All tags to preload this file in your HTML page.
+
+        Raises:
+            RuntimeError: If cannot find the file path in the
+                manifest.
+
+        Returns:
+            str -- all <link> tags to preload
+                this asset.
+        """
+        if settings.DJANGO_VITE_DEV_MODE:
+            return ""
+
+        if not self._manifest or path not in self._manifest:
+            raise RuntimeError(
+                f"Cannot find {path} in Vite manifest "
+                f"at {settings.DJANGO_VITE_MANIFEST_PATH}"
+            )
+
+        tags = []
+        manifest_entry = self._manifest[path]
+
+        # Add the script by itself
+        script_attrs = {
+            "type": "text/javascript",
+            "crossorigin": "anonymous",
+            "rel": "modulepreload",
+            "as": "script",
+        }
+
+        manifest_file = manifest_entry["file"]
+        url = DjangoViteAssetLoader._generate_production_server_url(
+            manifest_file
+        )
+        tags.append(
+            DjangoViteAssetLoader._generate_preload_tag(
+                url,
+                attrs=script_attrs,
+            )
+        )
+
+        # Add dependent CSS
+        tags.extend(self._preload_css_files_of_asset(path, []))
+
+        # Preload imports
+        for dep in manifest_entry.get("imports", []):
+            dep_manifest_entry = self._manifest[dep]
+            dep_file = dep_manifest_entry["file"]
+            url = DjangoViteAssetLoader._generate_production_server_url(
+                dep_file
+            )
+            tags.append(
+                DjangoViteAssetLoader._generate_preload_tag(
+                    url,
+                    attrs=script_attrs,
+                )
+            )
+
+        return "\n".join(tags)
+
+    def _preload_css_files_of_asset(
+        self, path: str, already_processed: List[str]
+    ) -> List[str]:
+        return self._generate_css_files_of_asset(
+            path,
+            already_processed,
+            DjangoViteAssetLoader._generate_stylesheet_preload_tag,
+        )
+
+    def _load_css_files_of_asset(
+        self, path: str, already_processed: List[str]
+    ) -> List[str]:
+        return self._generate_css_files_of_asset(
+            path,
+            already_processed,
+            DjangoViteAssetLoader._generate_stylesheet_tag,
+        )
+
+    def _generate_css_files_of_asset(
+        self, path: str, already_processed: List[str], config_key: str, tag_generator: Callable
+    ) -> List[str]:
+        """
+        Generates all CSS tags for dependencies of an asset.
+
+        Arguments:
+            path {str} -- Path to an asset in the 'manifest.json'.
+            config_key {str} -- Key of the configuration to use.
+            already_processed {list} -- List of already processed CSS file.
+
+        Returns:
+            list -- List of CSS tags.
+        """
+
+        tags = []
+        static_url = self._get_static_url(config_key)
+        manifest = self._get_manifest(config_key)
+        manifest_entry = manifest[path]
+
+        for import_path in manifest_entry.imports:
+            tags.extend(
+                self._generate_css_files_of_asset(
+                    import_path, already_processed, tag_generator
+                )
+            )
+
+        for css_path in manifest_entry.css:
+            if css_path not in already_processed:
+                url = (
+                    DjangoViteAssetLoader._generate_production_server_url(
+                        css_path
+                    )
+                )
+                tags.append(tag_generator(url))
+
+            already_processed.append(css_path)
+
+        return tags
+
     def generate_vite_asset_url(self, path: str, config_key: str) -> str:
         """
         Generates only the URL of an asset managed by ViteJS.
@@ -240,7 +396,9 @@ class DjangoViteAssetLoader:
                 f"at {config.get_computed_manifest_path()}"
             )
 
-        return urljoin(static_url, manifest[path].file)
+        return DjangoViteAssetLoader._generate_production_server_url(
+            self._manifest[path]["file"]
+        )
 
     def generate_vite_legacy_polyfills(
         self,
@@ -280,7 +438,9 @@ class DjangoViteAssetLoader:
         for path, content in manifest.items():
             if config.legacy_polyfills_motif in path:
                 return DjangoViteAssetLoader._generate_script_tag(
-                    urljoin(static_url, content.file),
+                    DjangoViteAssetLoader._generate_production_server_url(
+                        content["file"]
+                    ),
                     attrs=scripts_attrs,
                 )
 
@@ -334,7 +494,9 @@ class DjangoViteAssetLoader:
         scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
 
         return DjangoViteAssetLoader._generate_script_tag(
-            urljoin(static_url, manifest[path].file),
+            DjangoViteAssetLoader._generate_production_server_url(
+                manifest[path].file
+            ),
             attrs=scripts_attrs,
         )
 
@@ -490,7 +652,7 @@ class DjangoViteAssetLoader:
         return cls._instance
 
     @classmethod
-    def generate_vite_ws_client(cls, config_key: str) -> str:
+    def generate_vite_ws_client(cls, config_key: str, **kwargs: Dict[str, str]) -> str:
         """
         Generates the script tag for the Vite WS client for HMR.
         Only used in development, in production this method returns
@@ -501,6 +663,10 @@ class DjangoViteAssetLoader:
 
         Returns:
             str -- The script tag or an empty string.
+
+        Keyword Arguments:
+            **kwargs {Dict[str, str]} -- Adds new attributes to generated
+                script tags.
         """
 
         config = cls._get_config(config_key)
@@ -513,7 +679,7 @@ class DjangoViteAssetLoader:
             cls._generate_vite_server_url(
                 config.ws_client_url, static_url, config
             ),
-            {"type": "module"},
+            {"type": "module", **kwargs},
         )
 
     @staticmethod
@@ -541,7 +707,7 @@ class DjangoViteAssetLoader:
     @staticmethod
     def _generate_stylesheet_tag(href: str) -> str:
         """
-        Generates and HTML <link> stylesheet tag for CSS.
+        Generates an HTML <link> stylesheet tag for CSS.
 
         Arguments:
             href {str} -- CSS file URL.
@@ -551,6 +717,27 @@ class DjangoViteAssetLoader:
         """
 
         return f'<link rel="stylesheet" href="{href}" />'
+
+    def _generate_stylesheet_preload_tag(href: str) -> str:
+        """
+        Generates an HTML <link> preload tag for CSS.
+
+        Arguments:
+            href {str} -- CSS file URL.
+
+        Returns:
+            str -- CSS link tag.
+        """
+
+        return f'<link rel="preload" href="{href}" as="style" />'
+
+    @staticmethod
+    def _generate_preload_tag(href: str, attrs: Dict[str, str]) -> str:
+        attrs_str = " ".join(
+            [f'{key}="{value}"' for key, value in attrs.items()]
+        )
+
+        return f'<link href="{href}" {attrs_str} />'
 
     @staticmethod
     def _generate_vite_server_url(
@@ -575,14 +762,58 @@ class DjangoViteAssetLoader:
             urljoin(static_url, path),
         )
 
+    @classmethod
+    def generate_vite_react_refresh_url(cls) -> str:
+        """
+        Generates the script for the Vite React Refresh for HMR.
+        Only used in development, in production this method returns
+        an empty string.
 
-# Make Loader instance at startup to prevent threading problems
-DjangoViteAssetLoader.instance()
+        Returns:
+            str -- The script or an empty string.
+        """
+
+        if not settings.get("DJANGO_VITE_DEV_MODE"):
+            return ""
+
+        return f"""<script type="module">
+            import RefreshRuntime from \
+            '{cls._generate_vite_server_url(settings.get("DJANGO_VITE_REACT_REFRESH_URL"))}'
+            RefreshRuntime.injectIntoGlobalHook(window)
+            window.$RefreshReg$ = () => {{}}
+            window.$RefreshSig$ = () => (type) => type
+            window.__vite_plugin_react_preamble_installed__ = true
+        </script>"""
+
+    @staticmethod
+    def _generate_production_server_url(path: str) -> str:
+        """
+        Generates an URL to an asset served during production.
+
+        Keyword Arguments:
+            path {str} -- Path to the asset.
+
+        Returns:
+            str -- Full URL to the asset.
+        """
+
+        production_server_url = path
+        if prefix := settings.get("DJANGO_VITE_STATIC_URL_PREFIX", ""):
+            if not settings.get("DJANGO_VITE_STATIC_URL_PREFIX", "").endswith("/"):
+                prefix += "/"
+            production_server_url = urljoin(prefix, path)
+
+        if apps.is_installed("django.contrib.staticfiles"):
+            from django.contrib.staticfiles.storage import staticfiles_storage
+
+            return staticfiles_storage.url(production_server_url)
+
+        return production_server_url
 
 
 @register.simple_tag
 @mark_safe
-def vite_hmr_client(config: str = "default") -> str:
+def vite_hmr_client(config: str = "default", **kwargs: Dict[str, str]) -> str:
     """
     Generates the script tag for the Vite WS client for HMR.
     Only used in development, in production this method returns
@@ -593,9 +824,13 @@ def vite_hmr_client(config: str = "default") -> str:
 
     Returns:
         str -- The script tag or an empty string.
+
+    Keyword Arguments:
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
     """
 
-    return DjangoViteAssetLoader.generate_vite_ws_client(config)
+    return DjangoViteAssetLoader.generate_vite_ws_client(config, **kwargs)
 
 
 @register.simple_tag
@@ -606,9 +841,9 @@ def vite_asset(
     **kwargs: Dict[str, str],
 ) -> str:
     """
-    Generates a <script> tag for this JS/TS asset and a <link> tag for
-    all of its CSS dependencies by reading the manifest
-    file (for production only).
+    Generates a <script> tag for this JS/TS asset, a <link> tag for
+    all of its CSS dependencies, and a <link rel="modulepreload">
+    for all js dependencies, as listed in the manifest file
     In development Vite loads all by itself.
 
     Arguments:
@@ -637,6 +872,34 @@ def vite_asset(
     return DjangoViteAssetLoader.instance().generate_vite_asset(
         path, config, **kwargs
     )
+
+
+@register.simple_tag
+@mark_safe
+def vite_preload_asset(
+    path: str,
+) -> str:
+    """
+    Generates preloadmodule tag for this JS/TS asset and preloads
+    all of its CSS and JS dependencies by reading the manifest
+    file (for production only).
+    In development does nothing.
+
+    Arguments:
+        path {str} -- Path to a Vite JS/TS asset to include.
+
+    Returns:
+        str -- All tags to import this file in your HTML page.
+
+    Raises:
+        RuntimeError: If cannot find the file path in the
+            manifest (only in production).
+
+    """
+
+    assert path is not None
+
+    return DjangoViteAssetLoader.instance().preload_vite_asset(path)
 
 
 @register.simple_tag
@@ -733,3 +996,17 @@ def vite_legacy_asset(
     return DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
         path, config, **kwargs
     )
+
+
+@register.simple_tag
+@mark_safe
+def vite_react_refresh() -> str:
+    """
+    Generates the script for the Vite React Refresh for HMR.
+    Only used in development, in production this method returns
+    an empty string.
+
+    Returns:
+        str -- The script or an empty string.
+    """
+    return DjangoViteAssetLoader.generate_vite_react_refresh_url()
