@@ -165,7 +165,7 @@ class DjangoViteAssetLoader:
         scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
         # Add dependent CSS
-        tags.extend(self._generate_css_files_of_asset(path, config_key, []))
+        tags.extend(self._load_css_files_of_asset(path, [], config_key))
 
         # Add the script by itself
         tags.append(
@@ -201,6 +201,7 @@ class DjangoViteAssetLoader:
     def preload_vite_asset(
         self,
         path: str,
+        config_key: str = DEFAULT_CONFIG_KEY,
     ) -> str:
         """
         Generates a <link modulepreload> tag for this JS/TS asset, a
@@ -211,6 +212,7 @@ class DjangoViteAssetLoader:
 
         Arguments:
             path {str} -- Path to a Vite JS/TS asset to preload.
+            config_key {str} -- Key of the configuration to use.
 
         Returns:
             str -- All tags to preload this file in your HTML page.
@@ -223,17 +225,19 @@ class DjangoViteAssetLoader:
             str -- all <link> tags to preload
                 this asset.
         """
-        if settings.DJANGO_VITE_DEV_MODE:
+        tags = []
+        config = self._get_config(config_key)
+        manifest = self._get_manifest(config_key)
+        manifest_entry = manifest[path]
+
+        if not config.dev_mode:
             return ""
 
-        if not self._manifest or path not in self._manifest:
+        if path not in manifest:
             raise RuntimeError(
                 f"Cannot find {path} in Vite manifest "
-                f"at {settings.DJANGO_VITE_MANIFEST_PATH}"
+                f"at {config.get_computed_manifest_path()}"
             )
-
-        tags = []
-        manifest_entry = self._manifest[path]
 
         # Add the script by itself
         script_attrs = {
@@ -243,8 +247,10 @@ class DjangoViteAssetLoader:
             "as": "script",
         }
 
-        manifest_file = manifest_entry["file"]
-        url = DjangoViteAssetLoader._generate_production_server_url(manifest_file)
+        manifest_file = manifest_entry.file
+        url = DjangoViteAssetLoader._generate_production_server_url(
+            manifest_file, config.static_url_prefix
+        )
         tags.append(
             DjangoViteAssetLoader._generate_preload_tag(
                 url,
@@ -253,13 +259,14 @@ class DjangoViteAssetLoader:
         )
 
         # Add dependent CSS
-        tags.extend(self._preload_css_files_of_asset(path, []))
+        tags.extend(self._preload_css_files_of_asset(path, [], config_key))
 
         # Preload imports
-        for dep in manifest_entry.get("imports", []):
-            dep_manifest_entry = self._manifest[dep]
-            dep_file = dep_manifest_entry["file"]
-            url = DjangoViteAssetLoader._generate_production_server_url(dep_file)
+        for dependency_path in manifest_entry.imports:
+            dependency_file = manifest[dependency_path].file
+            url = DjangoViteAssetLoader._generate_production_server_url(
+                dependency_file, config.static_url_prefix
+            )
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
                     url,
@@ -270,29 +277,37 @@ class DjangoViteAssetLoader:
         return "\n".join(tags)
 
     def _preload_css_files_of_asset(
-        self, path: str, already_processed: List[str]
+        self,
+        path: str,
+        already_processed: List[str],
+        config_key: str = DEFAULT_CONFIG_KEY,
     ) -> List[str]:
         return self._generate_css_files_of_asset(
             path,
             already_processed,
             DjangoViteAssetLoader._generate_stylesheet_preload_tag,
+            config_key,
         )
 
     def _load_css_files_of_asset(
-        self, path: str, already_processed: List[str]
+        self,
+        path: str,
+        already_processed: List[str],
+        config_key: str = DEFAULT_CONFIG_KEY,
     ) -> List[str]:
         return self._generate_css_files_of_asset(
             path,
             already_processed,
             DjangoViteAssetLoader._generate_stylesheet_tag,
+            config_key,
         )
 
     def _generate_css_files_of_asset(
         self,
         path: str,
         already_processed: List[str],
-        config_key: str,
         tag_generator: Callable,
+        config_key: str = DEFAULT_CONFIG_KEY,
     ) -> List[str]:
         """
         Generates all CSS tags for dependencies of an asset.
@@ -314,7 +329,7 @@ class DjangoViteAssetLoader:
         for import_path in manifest_entry.imports:
             tags.extend(
                 self._generate_css_files_of_asset(
-                    import_path, already_processed, tag_generator
+                    import_path, already_processed, tag_generator, config_key
                 )
             )
 
@@ -454,10 +469,11 @@ class DjangoViteAssetLoader:
 
         scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
 
+        url = DjangoViteAssetLoader._generate_production_server_url(
+            manifest[path].file, config.static_url_prefix
+        )
         return DjangoViteAssetLoader._generate_script_tag(
-            DjangoViteAssetLoader._generate_production_server_url(
-                manifest[path].file, config.static_url_prefix
-            ),
+            url,
             attrs=scripts_attrs,
         )
 
@@ -702,6 +718,7 @@ class DjangoViteAssetLoader:
 
         Returns:
             str -- The script or an empty string.
+            config_key {str} -- Key of the configuration to use.
         """
         config = self._get_config(config_key)
 
@@ -810,9 +827,7 @@ def vite_asset(
 
 @register.simple_tag
 @mark_safe
-def vite_preload_asset(
-    path: str,
-) -> str:
+def vite_preload_asset(path: str, config_key: str = DEFAULT_CONFIG_KEY) -> str:
     """
     Generates preloadmodule tag for this JS/TS asset and preloads
     all of its CSS and JS dependencies by reading the manifest
@@ -833,7 +848,7 @@ def vite_preload_asset(
 
     assert path is not None
 
-    return DjangoViteAssetLoader.instance().preload_vite_asset(path)
+    return DjangoViteAssetLoader.instance().preload_vite_asset(path, config_key)
 
 
 @register.simple_tag
