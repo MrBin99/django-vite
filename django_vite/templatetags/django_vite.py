@@ -144,7 +144,6 @@ class DjangoViteAssetLoader:
         """
 
         config = self._get_config(config_key)
-        static_url = config.static_url
 
         if config.dev_mode:
             return DjangoViteAssetLoader._generate_script_tag(
@@ -169,7 +168,9 @@ class DjangoViteAssetLoader:
         # Add the script by itself
         tags.append(
             DjangoViteAssetLoader._generate_script_tag(
-                urljoin(static_url, manifest[path].file),
+                DjangoViteAssetLoader._generate_production_server_url(
+                    manifest[path].file, config.static_url_prefix
+                ),
                 attrs=scripts_attrs,
             )
         )
@@ -183,7 +184,7 @@ class DjangoViteAssetLoader:
         }
 
         for dep in manifest.imports:
-            dep_manifest_entry = self._manifest[dep]
+            dep_manifest_entry = manifest[dep]
             dep_file = dep_manifest_entry["file"]
             url = DjangoViteAssetLoader._generate_production_server_url(
                 dep_file, config.static_url_prefix
@@ -261,10 +262,11 @@ class DjangoViteAssetLoader:
         tags.extend(self._preload_css_files_of_asset(path, config_key))
 
         # Preload imports
-        for dependency_path in manifest_entry.imports:
-            dependency_file = manifest[dependency_path].file
+        for dep in manifest_entry.imports:
+            dep_manifest_entry = manifest[dep]
+            dep_file = dep_manifest_entry.file
             url = DjangoViteAssetLoader._generate_production_server_url(
-                dependency_file, config.static_url_prefix
+                dep_file, config.static_url_prefix
             )
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
