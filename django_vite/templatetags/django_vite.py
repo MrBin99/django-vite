@@ -10,6 +10,8 @@ from django.utils.safestring import mark_safe
 
 register = template.Library()
 
+DEFAULT_CONFIG_KEY = "default"
+
 
 class DjangoViteManifest(NamedTuple):
     """
@@ -57,6 +59,13 @@ class DjangoViteConfig(NamedTuple):
 
     # Default Vite server path to React RefreshRuntime for @vitejs/plugin-react.
     react_refresh_url: str = "@react-refresh"
+
+    @property
+    def static_url(self) -> str:
+        url = urljoin(settings.STATIC_URL, self.static_url_prefix)
+        if not url.endswith("/"):
+            url += "/"
+        return url
 
     @property
     def static_root(self) -> Union[Path, str]:
@@ -136,13 +145,11 @@ class DjangoViteAssetLoader:
         """
 
         config = self._get_config(config_key)
-        static_url = self._get_static_url(config_key)
+        static_url = config.static_url
 
         if config.dev_mode:
             return DjangoViteAssetLoader._generate_script_tag(
-                DjangoViteAssetLoader._generate_vite_server_url(
-                    path, static_url, config
-                ),
+                DjangoViteAssetLoader._generate_vite_server_url(path, config),
                 {"type": "module", **kwargs},
             )
 
@@ -180,7 +187,7 @@ class DjangoViteAssetLoader:
             dep_manifest_entry = self._manifest[dep]
             dep_file = dep_manifest_entry["file"]
             url = DjangoViteAssetLoader._generate_production_server_url(
-                dep_file
+                dep_file, config.static_url_prefix
             )
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
@@ -304,7 +311,7 @@ class DjangoViteAssetLoader:
         """
 
         tags = []
-        static_url = self._get_static_url(config_key)
+        config = self._get_config(config_key)
         manifest = self._get_manifest(config_key)
         manifest_entry = manifest[path]
 
@@ -318,7 +325,7 @@ class DjangoViteAssetLoader:
         for css_path in manifest_entry.css:
             if css_path not in already_processed:
                 url = DjangoViteAssetLoader._generate_production_server_url(
-                    css_path
+                    css_path, config.static_url_prefix
                 )
                 tags.append(tag_generator(url))
 
@@ -344,7 +351,6 @@ class DjangoViteAssetLoader:
         """
 
         config = self._get_config(config_key)
-        static_url = self._get_static_url(config_key)
 
         if config.dev_mode:
             return DjangoViteAssetLoader._generate_vite_server_url(
@@ -360,7 +366,7 @@ class DjangoViteAssetLoader:
             )
 
         return DjangoViteAssetLoader._generate_production_server_url(
-            self._manifest[path]["file"]
+            self._manifest[path]["file"], config.static_url_prefix
         )
 
     def generate_vite_legacy_polyfills(
@@ -391,7 +397,6 @@ class DjangoViteAssetLoader:
 
         config = self._get_config(config_key)
         manifest = self._get_manifest(config_key)
-        static_url = self._get_static_url(config_key)
 
         if config.dev_mode:
             return ""
@@ -402,7 +407,7 @@ class DjangoViteAssetLoader:
             if config.legacy_polyfills_motif in path:
                 return DjangoViteAssetLoader._generate_script_tag(
                     DjangoViteAssetLoader._generate_production_server_url(
-                        content["file"]
+                        content["file"], config.static_url_prefix
                     ),
                     attrs=scripts_attrs,
                 )
@@ -441,7 +446,6 @@ class DjangoViteAssetLoader:
         """
 
         config = self._get_config(config_key)
-        static_url = self._get_static_url(config_key)
 
         if config.dev_mode:
             return ""
@@ -458,7 +462,7 @@ class DjangoViteAssetLoader:
 
         return DjangoViteAssetLoader._generate_script_tag(
             DjangoViteAssetLoader._generate_production_server_url(
-                manifest[path].file
+                manifest[path].file, config.static_url_prefix
             ),
             attrs=scripts_attrs,
         )
@@ -536,27 +540,6 @@ class DjangoViteAssetLoader:
 
         return self._manifests[config_key]
 
-    def _get_static_url(self, config_key: str) -> str:
-        """
-        Build the static URL of a specified configuration.
-
-        Arguments:
-            config_key {str} -- Key of the configuration to use.
-
-        Returns:
-            str -- The static URL.
-        """
-
-        if config_key not in self._static_urls:
-            config = self._get_config(config_key)
-            static_url = urljoin(settings.STATIC_URL, config.static_url_prefix)
-
-            self._static_urls[config_key] = (
-                static_url if static_url[-1] == "/" else static_url + "/"
-            )
-
-        return self._static_urls[config_key]
-
     @classmethod
     def instance(cls):
         """
@@ -610,13 +593,15 @@ class DjangoViteAssetLoader:
                     if setting_key in _config_keys.keys()
                 }
 
-                cls._instance._configs["default"] = DjangoViteConfig(**config)
+                cls._instance._configs[DEFAULT_CONFIG_KEY] = DjangoViteConfig(
+                    **config
+                )
 
         return cls._instance
 
     @classmethod
     def generate_vite_ws_client(
-        cls, config_key: str, **kwargs: Dict[str, str]
+        cls, config_key: str = DEFAULT_CONFIG_KEY, **kwargs: Dict[str, str]
     ) -> str:
         """
         Generates the script tag for the Vite WS client for HMR.
@@ -635,15 +620,12 @@ class DjangoViteAssetLoader:
         """
 
         config = cls._get_config(config_key)
-        static_url = cls._get_static_url(config_key)
 
         if not config.dev_mode:
             return ""
 
         return cls._generate_script_tag(
-            cls._generate_vite_server_url(
-                config.ws_client_url, static_url, config
-            ),
+            cls._generate_vite_server_url(config.ws_client_url, config),
             {"type": "module", **kwargs},
         )
 
@@ -707,7 +689,6 @@ class DjangoViteAssetLoader:
     @staticmethod
     def _generate_vite_server_url(
         path: str,
-        static_url: str,
         config: Type[DjangoViteConfig],
     ) -> str:
         """
@@ -724,11 +705,13 @@ class DjangoViteAssetLoader:
         return urljoin(
             f"{config.dev_server_protocol}://"
             f"{config.dev_server_host}:{config.dev_server_port}",
-            urljoin(static_url, path),
+            urljoin(config.static_url, path),
         )
 
     @classmethod
-    def generate_vite_react_refresh_url(self, config_key: str = "default") -> str:
+    def generate_vite_react_refresh_url(
+        self, config_key: str = DEFAULT_CONFIG_KEY
+    ) -> str:
         """
         Generates the script for the Vite React Refresh for HMR.
         Only used in development, in production this method returns
@@ -744,7 +727,7 @@ class DjangoViteAssetLoader:
 
         return f"""<script type="module">
             import RefreshRuntime from \
-            '{self._generate_vite_server_url(config.react_refresh_url)}'
+            '{self._generate_vite_server_url(config.react_refresh_url, config)}'
             RefreshRuntime.injectIntoGlobalHook(window)
             window.$RefreshReg$ = () => {{}}
             window.$RefreshSig$ = () => (type) => type
@@ -752,7 +735,9 @@ class DjangoViteAssetLoader:
         </script>"""
 
     @staticmethod
-    def _generate_production_server_url(path: str) -> str:
+    def _generate_production_server_url(
+        path: str, static_url_prefix=""
+    ) -> str:
         """
         Generates an URL to an asset served during production.
 
@@ -764,8 +749,8 @@ class DjangoViteAssetLoader:
         """
 
         production_server_url = path
-        if prefix := settings.get("DJANGO_VITE_STATIC_URL_PREFIX", ""):
-            if not settings.get("DJANGO_VITE_STATIC_URL_PREFIX", "").endswith("/"):
+        if prefix := static_url_prefix:
+            if not static_url_prefix.endswith("/"):
                 prefix += "/"
             production_server_url = urljoin(prefix, path)
 
@@ -779,7 +764,9 @@ class DjangoViteAssetLoader:
 
 @register.simple_tag
 @mark_safe
-def vite_hmr_client(config: str = "default", **kwargs: Dict[str, str]) -> str:
+def vite_hmr_client(
+    config_key: str = DEFAULT_CONFIG_KEY, **kwargs: Dict[str, str]
+) -> str:
     """
     Generates the script tag for the Vite WS client for HMR.
     Only used in development, in production this method returns
@@ -796,14 +783,14 @@ def vite_hmr_client(config: str = "default", **kwargs: Dict[str, str]) -> str:
             script tags.
     """
 
-    return DjangoViteAssetLoader.generate_vite_ws_client(config, **kwargs)
+    return DjangoViteAssetLoader.generate_vite_ws_client(config_key, **kwargs)
 
 
 @register.simple_tag
 @mark_safe
 def vite_asset(
     path: str,
-    config: str = "default",
+    config_key: str = DEFAULT_CONFIG_KEY,
     **kwargs: Dict[str, str],
 ) -> str:
     """
@@ -833,10 +820,10 @@ def vite_asset(
     """
 
     assert path is not None
-    assert config is not None
+    assert config_key is not None
 
     return DjangoViteAssetLoader.instance().generate_vite_asset(
-        path, config, **kwargs
+        path, config_key, **kwargs
     )
 
 
@@ -869,7 +856,7 @@ def vite_preload_asset(
 
 
 @register.simple_tag
-def vite_asset_url(path: str, config: str = "default") -> str:
+def vite_asset_url(path: str, config_key: str = DEFAULT_CONFIG_KEY) -> str:
     """
     Generates only the URL of an asset managed by ViteJS.
     Warning, this function does not generate URLs for dependant assets.
@@ -885,19 +872,16 @@ def vite_asset_url(path: str, config: str = "default") -> str:
     Returns:
         str -- The URL of this asset.
     """
-
     assert path is not None
-    assert config is not None
-
     return DjangoViteAssetLoader.instance().generate_vite_asset_url(
-        path, config
+        path, config_key
     )
 
 
 @register.simple_tag
 @mark_safe
 def vite_legacy_polyfills(
-    config: str = "default", **kwargs: Dict[str, str]
+    config_key: str = DEFAULT_CONFIG_KEY, **kwargs: Dict[str, str]
 ) -> str:
     """
     Generates a <script> tag to the polyfills generated
@@ -906,7 +890,7 @@ def vite_legacy_polyfills(
     other legacy scripts.
 
     Arguments:
-        config {str} -- Configuration to use.
+        config_key {str} -- Configuration to use.
 
     Keyword Arguments:
         **kwargs {Dict[str, str]} -- Adds new attributes to generated
@@ -919,11 +903,8 @@ def vite_legacy_polyfills(
     Returns:
         str -- The script tag to the polyfills.
     """
-
-    assert config is not None
-
     return DjangoViteAssetLoader.instance().generate_vite_legacy_polyfills(
-        config, **kwargs
+        config_key, **kwargs
     )
 
 
@@ -931,7 +912,7 @@ def vite_legacy_polyfills(
 @mark_safe
 def vite_legacy_asset(
     path: str,
-    config: str = "default",
+    config_key: str = DEFAULT_CONFIG_KEY,
     **kwargs: Dict[str, str],
 ) -> str:
     """
@@ -942,7 +923,7 @@ def vite_legacy_asset(
     Arguments:
         path {str} -- Path to a Vite asset to include
             (must contains '-legacy' in its name).
-        config {str} -- Configuration to use.
+        config_key {str} -- Configuration to use.
 
     Keyword Arguments:
         **kwargs {Dict[str, str]} -- Adds new attributes to generated
@@ -957,16 +938,15 @@ def vite_legacy_asset(
     """
 
     assert path is not None
-    assert config is not None
 
     return DjangoViteAssetLoader.instance().generate_vite_legacy_asset(
-        path, config, **kwargs
+        path, config_key, **kwargs
     )
 
 
 @register.simple_tag
 @mark_safe
-def vite_react_refresh(config_key: str = "default") -> str:
+def vite_react_refresh(config_key: str = DEFAULT_CONFIG_KEY) -> str:
     """
     Generates the script for the Vite React Refresh for HMR.
     Only used in development, in production this method returns
