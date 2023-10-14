@@ -244,9 +244,7 @@ class DjangoViteAssetLoader:
         }
 
         manifest_file = manifest_entry["file"]
-        url = DjangoViteAssetLoader._generate_production_server_url(
-            manifest_file
-        )
+        url = DjangoViteAssetLoader._generate_production_server_url(manifest_file)
         tags.append(
             DjangoViteAssetLoader._generate_preload_tag(
                 url,
@@ -261,9 +259,7 @@ class DjangoViteAssetLoader:
         for dep in manifest_entry.get("imports", []):
             dep_manifest_entry = self._manifest[dep]
             dep_file = dep_manifest_entry["file"]
-            url = DjangoViteAssetLoader._generate_production_server_url(
-                dep_file
-            )
+            url = DjangoViteAssetLoader._generate_production_server_url(dep_file)
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
                     url,
@@ -353,9 +349,7 @@ class DjangoViteAssetLoader:
         config = self._get_config(config_key)
 
         if config.dev_mode:
-            return DjangoViteAssetLoader._generate_vite_server_url(
-                path, config
-            )
+            return DjangoViteAssetLoader._generate_vite_server_url(path, config)
 
         manifest = self._get_manifest(config_key)
 
@@ -503,16 +497,11 @@ class DjangoViteAssetLoader:
         config = self._get_config(config_key)
 
         try:
-            with open(
-                config.get_computed_manifest_path(), "r"
-            ) as manifest_file:
+            with open(config.get_computed_manifest_path(), "r") as manifest_file:
                 manifest_content = manifest_file.read()
                 manifest_json = json.loads(manifest_content)
 
-                return {
-                    k: DjangoViteManifest(**v)
-                    for k, v in manifest_json.items()
-                }
+                return {k: DjangoViteManifest(**v) for k, v in manifest_json.items()}
 
         except Exception as error:
             raise RuntimeError(
@@ -520,9 +509,7 @@ class DjangoViteAssetLoader:
                 f"{config.get_computed_manifest_path()} : {str(error)}"
             )
 
-    def _get_manifest(
-        self, config_key: str
-    ) -> Dict[str, Type[DjangoViteManifest]]:
+    def _get_manifest(self, config_key: str) -> Dict[str, Type[DjangoViteManifest]]:
         """
         Load if needed and parse the "manifest.json" of the specified
         configuration.
@@ -645,9 +632,7 @@ class DjangoViteAssetLoader:
             str -- The script tag.
         """
 
-        attrs_str = " ".join(
-            [f'{key}="{value}"' for key, value in attrs.items()]
-        )
+        attrs_str = " ".join([f'{key}="{value}"' for key, value in attrs.items()])
 
         return f'<script {attrs_str} src="{src}"></script>'
 
@@ -680,9 +665,7 @@ class DjangoViteAssetLoader:
 
     @staticmethod
     def _generate_preload_tag(href: str, attrs: Dict[str, str]) -> str:
-        attrs_str = " ".join(
-            [f'{key}="{value}"' for key, value in attrs.items()]
-        )
+        attrs_str = " ".join([f'{key}="{value}"' for key, value in attrs.items()])
 
         return f'<link href="{href}" {attrs_str} />'
 
@@ -735,9 +718,7 @@ class DjangoViteAssetLoader:
         </script>"""
 
     @staticmethod
-    def _generate_production_server_url(
-        path: str, static_url_prefix=""
-    ) -> str:
+    def _generate_production_server_url(path: str, static_url_prefix="") -> str:
         """
         Generates an URL to an asset served during production.
 
@@ -873,9 +854,7 @@ def vite_asset_url(path: str, config_key: str = DEFAULT_CONFIG_KEY) -> str:
         str -- The URL of this asset.
     """
     assert path is not None
-    return DjangoViteAssetLoader.instance().generate_vite_asset_url(
-        path, config_key
-    )
+    return DjangoViteAssetLoader.instance().generate_vite_asset_url(path, config_key)
 
 
 @register.simple_tag
