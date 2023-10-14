@@ -165,7 +165,7 @@ class DjangoViteAssetLoader:
         scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
         # Add dependent CSS
-        tags.extend(self._load_css_files_of_asset(path, [], config_key))
+        tags.extend(self._load_css_files_of_asset(path, config_key))
 
         # Add the script by itself
         tags.append(
@@ -259,7 +259,7 @@ class DjangoViteAssetLoader:
         )
 
         # Add dependent CSS
-        tags.extend(self._preload_css_files_of_asset(path, [], config_key))
+        tags.extend(self._preload_css_files_of_asset(path, config_key))
 
         # Preload imports
         for dependency_path in manifest_entry.imports:
@@ -279,12 +279,11 @@ class DjangoViteAssetLoader:
     def _preload_css_files_of_asset(
         self,
         path: str,
-        already_processed: List[str],
         config_key: str = DEFAULT_CONFIG_KEY,
     ) -> List[str]:
         return self._generate_css_files_of_asset(
             path,
-            already_processed,
+            [],
             DjangoViteAssetLoader._generate_stylesheet_preload_tag,
             config_key,
         )
@@ -292,12 +291,11 @@ class DjangoViteAssetLoader:
     def _load_css_files_of_asset(
         self,
         path: str,
-        already_processed: List[str],
         config_key: str = DEFAULT_CONFIG_KEY,
     ) -> List[str]:
         return self._generate_css_files_of_asset(
             path,
-            already_processed,
+            [],
             DjangoViteAssetLoader._generate_stylesheet_tag,
             config_key,
         )
