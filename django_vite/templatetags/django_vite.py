@@ -106,7 +106,6 @@ class DjangoViteAssetLoader:
 
     _configs = Dict[str, Type[DjangoViteConfig]]
     _manifests: Dict[str, Type[DjangoViteManifest]]
-    _static_urls: Dict[str, str]
 
     def __init__(self) -> None:
         raise RuntimeError("Use the instance() method instead.")
@@ -556,7 +555,6 @@ class DjangoViteAssetLoader:
             cls._instance = cls.__new__(cls)
             cls._instance._configs = {}
             cls._instance._manifests = {}
-            cls._instance._static_urls = {}
 
             if hasattr(settings, "DJANGO_VITE"):
                 config = getattr(settings, "DJANGO_VITE")
