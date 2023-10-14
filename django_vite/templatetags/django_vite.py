@@ -191,48 +191,6 @@ class DjangoViteAssetLoader:
 
         return "\n".join(tags)
 
-    def _generate_css_files_of_asset(
-        self,
-        path: str,
-        config_key: str,
-        already_processed: List[str],
-    ) -> List[str]:
-        """
-        Generates all CSS tags for dependencies of an asset.
-
-        Arguments:
-            path {str} -- Path to an asset in the 'manifest.json'.
-            config_key {str} -- Key of the configuration to use.
-            already_processed {list} -- List of already processed CSS file.
-
-        Returns:
-            list -- List of CSS tags.
-        """
-
-        tags = []
-        static_url = self._get_static_url(config_key)
-        manifest = self._get_manifest(config_key)
-        manifest_entry = manifest[path]
-
-        for import_path in manifest_entry.imports:
-            tags.extend(
-                self._generate_css_files_of_asset(
-                    import_path, already_processed
-                )
-            )
-
-        for css_path in manifest_entry.css:
-            if css_path not in already_processed:
-                tags.append(
-                    DjangoViteAssetLoader._generate_stylesheet_tag(
-                        urljoin(static_url, css_path)
-                    )
-                )
-
-            already_processed.append(css_path)
-
-        return tags
-
     def preload_vite_asset(
         self,
         path: str,
@@ -327,7 +285,11 @@ class DjangoViteAssetLoader:
         )
 
     def _generate_css_files_of_asset(
-        self, path: str, already_processed: List[str], config_key: str, tag_generator: Callable
+        self,
+        path: str,
+        already_processed: List[str],
+        config_key: str,
+        tag_generator: Callable,
     ) -> List[str]:
         """
         Generates all CSS tags for dependencies of an asset.
@@ -355,10 +317,8 @@ class DjangoViteAssetLoader:
 
         for css_path in manifest_entry.css:
             if css_path not in already_processed:
-                url = (
-                    DjangoViteAssetLoader._generate_production_server_url(
-                        css_path
-                    )
+                url = DjangoViteAssetLoader._generate_production_server_url(
+                    css_path
                 )
                 tags.append(tag_generator(url))
 
@@ -655,7 +615,9 @@ class DjangoViteAssetLoader:
         return cls._instance
 
     @classmethod
-    def generate_vite_ws_client(cls, config_key: str, **kwargs: Dict[str, str]) -> str:
+    def generate_vite_ws_client(
+        cls, config_key: str, **kwargs: Dict[str, str]
+    ) -> str:
         """
         Generates the script tag for the Vite WS client for HMR.
         Only used in development, in production this method returns
