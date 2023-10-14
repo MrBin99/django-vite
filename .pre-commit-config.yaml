@@ -20,7 +20,7 @@ repos:
       - id: "flake8"
 
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: master
+    rev: "3.10.0"
     hooks:
       - id: "commitizen"
         stages: ["commit-msg"]
