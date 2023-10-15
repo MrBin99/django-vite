@@ -1,2 +1,31 @@
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+django_find_project = false
+pythonpath = "."
+addopts = '''
+  --cov=django_vite
+  --cov-report html
+  --cov-report term-missing
+  --cov-branch
+  --cov-fail-under=100
+'''
+
 [tool.black]
-line-length = 85
+line-length = 88
+
+[tool.ruff]
+select = [
+  "E",   # pycodestyle
+  "F",   # pyflakes
+  "C",  # pyupgrade
+  "B", # bugbear,
+  "PT",  # pytest,
+  "SIM",  # simplify,
+  "DJ", # django
+]
+
+# do not autofix the following violations due to bad DX:
+unfixable = [
+  "F401",  # Module imported but unused
+  "F841", # Unused variables
+]

@@ -1,0 +1,24 @@
+{
+    "../../vite/legacy-polyfills-legacy": {
+      "file": "assets/polyfills-legacy-f4c2b91e.js",
+      "isEntry": true,
+      "src": "../../vite/legacy-polyfills-legacy"
+    },
+    "src/entry-legacy.ts": {
+      "file": "assets/entry-legacy-32083566.js",
+      "isEntry": true,
+      "src": "src/entry-legacy.ts"
+    },
+    "src/entry.css": {
+      "file": "assets/entry-74d0d5dd.css",
+      "src": "src/entry.css"
+    },
+    "src/entry.ts": {
+      "css": [
+        "assets/entry-74d0d5dd.css"
+      ],
+      "file": "assets/entry-2e8a3a7a.js",
+      "isEntry": true,
+      "src": "src/entry.ts"
+    }
+}

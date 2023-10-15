@@ -8,9 +8,11 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.safestring import mark_safe
 
-register = template.Library()
+from django_vite.exceptions import DjangoViteManifestError, DjangoViteAssetNotFoundError
 
 DEFAULT_CONFIG_KEY = "default"
+
+register = template.Library()
 
 
 class DjangoViteManifest(NamedTuple):
@@ -135,7 +137,7 @@ class DjangoViteAssetLoader:
                 script tags.
 
         Raises:
-            RuntimeError: If cannot find the file path in the
+            DjangoViteAssetNotFoundError: If cannot find the file path in the
                 manifest (only in production).
 
         Returns:
@@ -154,7 +156,7 @@ class DjangoViteAssetLoader:
         manifest = self._get_manifest(config_key)
 
         if path not in manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {config.get_computed_manifest_path()}"
             )
@@ -218,7 +220,7 @@ class DjangoViteAssetLoader:
             str -- All tags to preload this file in your HTML page.
 
         Raises:
-            RuntimeError: If cannot find the file path in the
+            DjangoViteAssetNotFoundError: if cannot find the file path in the
                 manifest.
 
         Returns:
@@ -234,7 +236,7 @@ class DjangoViteAssetLoader:
             return ""
 
         if path not in manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {config.get_computed_manifest_path()}"
             )
@@ -353,7 +355,7 @@ class DjangoViteAssetLoader:
             config_key {str} -- Key of the configuration to use.
 
         Raises:
-            RuntimeError: If cannot find the asset path in the
+            DjangoViteAssetNotFoundError: If cannot find the asset path in the
                 manifest (only in production).
 
         Returns:
@@ -368,7 +370,7 @@ class DjangoViteAssetLoader:
         manifest = self._get_manifest(config_key)
 
         if path not in manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {config.get_computed_manifest_path()}"
             )
@@ -396,7 +398,7 @@ class DjangoViteAssetLoader:
                 script tags.
 
         Raises:
-            RuntimeError: If polyfills path not found inside
+            DjangoViteAssetNotFoundError: If polyfills path not found inside
                 the 'manifest.json' (only in production).
 
         Returns:
@@ -420,7 +422,7 @@ class DjangoViteAssetLoader:
                     attrs=scripts_attrs,
                 )
 
-        raise RuntimeError(
+        raise DjangoViteAssetNotFoundError(
             f"Vite legacy polyfills not found in manifest "
             f"at {config.get_computed_manifest_path()}"
         )
@@ -446,7 +448,7 @@ class DjangoViteAssetLoader:
                 script tags.
 
         Raises:
-            RuntimeError: If cannot find the asset path in the
+            DjangoViteAssetNotFoundError: If cannot find the asset path in the
                 manifest (only in production).
 
         Returns:
@@ -461,7 +463,7 @@ class DjangoViteAssetLoader:
         manifest = self._get_manifest(config_key)
 
         if path not in manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {config.get_computed_manifest_path()}"
             )
@@ -496,9 +498,7 @@ class DjangoViteAssetLoader:
 
         return self._configs[config_key]
 
-    def _parse_manifest(
-        self, config_key: str
-    ) -> Dict[str, Type[DjangoViteManifest]]:
+    def _parse_manifest(self, config_key: str) -> Dict[str, Type[DjangoViteManifest]]:
         """
         Read and parse the Vite manifest file.
 
@@ -506,7 +506,8 @@ class DjangoViteAssetLoader:
             config_key {str} -- Key of the configuration to use.
 
         Raises:
-            RuntimeError: if cannot load the file or JSON in file is malformed.
+            DjangoViteManifestError: if cannot load the file or JSON in file is
+            malformed.
         """
 
         config = self._get_config(config_key)
@@ -519,10 +520,10 @@ class DjangoViteAssetLoader:
                 return {k: DjangoViteManifest(**v) for k, v in manifest_json.items()}
 
         except Exception as error:
-            raise RuntimeError(
+            raise DjangoViteManifestError(
                 f"Cannot read Vite manifest file at "
                 f"{config.get_computed_manifest_path()} : {str(error)}"
-            )
+            ) from error
 
     def _get_manifest(self, config_key: str) -> Dict[str, Type[DjangoViteManifest]]:
         """
@@ -594,9 +595,7 @@ class DjangoViteAssetLoader:
                     if setting_key in _config_keys.keys()
                 }
 
-                cls._instance._configs[DEFAULT_CONFIG_KEY] = DjangoViteConfig(
-                    **config
-                )
+                cls._instance._configs[DEFAULT_CONFIG_KEY] = DjangoViteConfig(**config)
 
         return cls._instance
 
@@ -843,7 +842,6 @@ def vite_preload_asset(path: str, config_key: str = DEFAULT_CONFIG_KEY) -> str:
             manifest (only in production).
 
     """
-
     assert path is not None
 
     return DjangoViteAssetLoader.instance().preload_vite_asset(path, config_key)
