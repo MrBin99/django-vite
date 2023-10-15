@@ -4,6 +4,7 @@ from django.apps import AppConfig
 from django.core.checks import Warning, register
 
 from .templatetags.django_vite import DjangoViteAssetLoader
+from .exceptions import DjangoViteManifestError
 
 
 class DjangoViteAppConfig(AppConfig):
@@ -11,7 +12,7 @@ class DjangoViteAppConfig(AppConfig):
     verbose_name = "Django Vite"
 
     def ready(self) -> None:
-        with suppress(RuntimeError):
+        with suppress(DjangoViteManifestError):
             # Create Loader instance at startup to prevent threading problems,
             # but do not crash while doing so.
             DjangoViteAssetLoader.instance()
@@ -25,7 +26,7 @@ def check_loader_instance(**kwargs):
         # Make Loader instance at startup to prevent threading problems
         DjangoViteAssetLoader.instance()
         return []
-    except RuntimeError as exception:
+    except DjangoViteManifestError as exception:
         return [
             Warning(
                 exception,

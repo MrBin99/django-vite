@@ -1,3 +1,4 @@
+import pytest
 from bs4 import BeautifulSoup
 from django.template import Context, Template
 
@@ -30,12 +31,8 @@ def test_vite_hmr_client_kwargs():
     assert script_tag["blocking"] == "render"
 
 
-def test_vite_hmr_client_returns_nothing_with_dev_mode_off(patch_settings):
-    patch_settings(
-        {
-            "DJANGO_VITE_DEV_MODE": False,
-        }
-    )
+@pytest.mark.usefixtures("dev_mode_off")
+def test_vite_hmr_client_returns_nothing_with_dev_mode_off():
     template = Template(
         """
         {% load django_vite %}

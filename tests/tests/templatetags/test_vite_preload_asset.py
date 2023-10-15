@@ -4,11 +4,11 @@ from django.template import Context, Template
 from django_vite.exceptions import DjangoViteAssetNotFoundError
 
 
-def test_vite_legacy_asset_returns_nothing_with_dev_mode_on():
+def test_vite_hmr_client_returns_nothing_with_dev_mode_on():
     template = Template(
         """
         {% load django_vite %}
-        {% vite_legacy_asset "src/entry.ts" %}
+        {% vite_preload_asset "src/entry.ts" %}
     """
     )
     html = template.render(Context({}))
@@ -17,24 +17,20 @@ def test_vite_legacy_asset_returns_nothing_with_dev_mode_on():
 
 
 @pytest.mark.usefixtures("dev_mode_off")
-def test_vite_asset_legacy_returns_production_tags(patch_settings, settings):
-    patch_settings(
-        {
-            "DJANGO_VITE_MANIFEST_PATH": settings.STATIC_ROOT
-            / "polyfills-manifest.json",
-        }
-    )
+def test_preload_vite_asset_returns_production_tags():
     template = Template(
         """
         {% load django_vite %}
-        {% vite_legacy_asset "src/entry.ts" %}
+        {% vite_preload_asset "src/entry.ts" %}
     """
     )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
-    script_tag = soup.find("script")
-    assert script_tag["src"] == "assets/entry-2e8a3a7a.js"
-    assert script_tag["nomodule"] == ""
+    links = soup.find_all("link")
+    assert len(links) == 14
+    first_link = links[0]
+    assert first_link["href"] == "assets/entry-29e38a60.js"
+    assert first_link["rel"] == ["modulepreload"]
 
 
 @pytest.mark.usefixtures("dev_mode_off")
@@ -43,7 +39,7 @@ def test_vite_asset_raises_nonexistent_entry():
         template = Template(
             """
             {% load django_vite %}
-            {% vite_legacy_asset "src/fake.ts" %}
+            {% vite_preload_asset "src/fake.ts" %}
         """
         )
         template.render(Context({}))
