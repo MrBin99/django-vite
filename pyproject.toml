@@ -7,7 +7,11 @@ addopts = '''
   --cov-report html
   --cov-report term-missing
   --cov-branch
+  --cov-fail-under=100
 '''
+
+[tool.black]
+line-length = 88
 
 [tool.ruff]
 select = [
