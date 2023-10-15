@@ -10,7 +10,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="django-vite",
-    version="2.1.2",
+    version="2.1.3",
     description="Integration of Vite in a Django project.",
     long_description=README,
     long_description_content_type="text/markdown",
