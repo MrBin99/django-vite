@@ -17,7 +17,7 @@ def test_vite_legacy_asset_returns_nothing_with_dev_mode_on():
 
 
 @pytest.mark.usefixtures("dev_mode_off")
-def test_vite_asset_legacy_returns_production_tags(patch_settings, settings):
+def test_vite_legacy_asset_returns_production_tags(patch_settings, settings):
     patch_settings(
         {
             "DJANGO_VITE_MANIFEST_PATH": settings.STATIC_ROOT
@@ -38,7 +38,7 @@ def test_vite_asset_legacy_returns_production_tags(patch_settings, settings):
 
 
 @pytest.mark.usefixtures("dev_mode_off")
-def test_vite_asset_raises_nonexistent_entry():
+def test_vite_legacy_asset_raises_nonexistent_entry():
     with pytest.raises(DjangoViteAssetNotFoundError):
         template = Template(
             """

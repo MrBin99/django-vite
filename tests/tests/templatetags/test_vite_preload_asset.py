@@ -4,7 +4,7 @@ from django.template import Context, Template
 from django_vite.exceptions import DjangoViteAssetNotFoundError
 
 
-def test_vite_hmr_client_returns_nothing_with_dev_mode_on():
+def test_preload_vite_asset_returns_nothing_with_dev_mode_on():
     template = Template(
         """
         {% load django_vite %}
@@ -34,7 +34,7 @@ def test_preload_vite_asset_returns_production_tags():
 
 
 @pytest.mark.usefixtures("dev_mode_off")
-def test_vite_asset_raises_nonexistent_entry():
+def test_vite_preload_asset_raises_nonexistent_entry():
     with pytest.raises(DjangoViteAssetNotFoundError):
         template = Template(
             """
