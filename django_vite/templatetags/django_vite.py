@@ -21,8 +21,8 @@ class DjangoViteManifest(NamedTuple):
     """
 
     file: str
-    src: str
-    isEntry: bool
+    src: Optional[str] = None
+    isEntry: Optional[bool] = False
     css: Optional[List[str]] = []
     imports: Optional[List[str]] = []
 
@@ -70,7 +70,7 @@ class DjangoViteConfig(NamedTuple):
         return url
 
     @property
-    def static_root(self) -> Union[Path, str]:
+    def static_root(self) -> Path:
         """
         Compute the static root URL of assets.
 
@@ -79,7 +79,7 @@ class DjangoViteConfig(NamedTuple):
         """
 
         return (
-            self.assets_path
+            Path(self.assets_path)
             if self.dev_mode
             else Path(settings.STATIC_ROOT) / self.static_url_prefix
         )
@@ -161,6 +161,7 @@ class DjangoViteAssetLoader:
                 f"at {config.get_computed_manifest_path()}"
             )
 
+        manifest_entry = manifest[path]
         tags = []
         scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
@@ -171,7 +172,7 @@ class DjangoViteAssetLoader:
         tags.append(
             DjangoViteAssetLoader._generate_script_tag(
                 DjangoViteAssetLoader._generate_production_server_url(
-                    manifest[path].file, config.static_url_prefix
+                    manifest_entry.file, config.static_url_prefix
                 ),
                 attrs=scripts_attrs,
             )
@@ -185,9 +186,9 @@ class DjangoViteAssetLoader:
             "as": "script",
         }
 
-        for dep in manifest.imports:
+        for dep in manifest_entry.imports:
             dep_manifest_entry = manifest[dep]
-            dep_file = dep_manifest_entry["file"]
+            dep_file = dep_manifest_entry.file
             url = DjangoViteAssetLoader._generate_production_server_url(
                 dep_file, config.static_url_prefix
             )
@@ -229,17 +230,19 @@ class DjangoViteAssetLoader:
         """
         tags = []
         config = self._get_config(config_key)
-        manifest = self._get_manifest(config_key)
-        manifest_entry = manifest[path]
 
-        if not config.dev_mode:
+        if config.dev_mode:
             return ""
+
+        manifest = self._get_manifest(config_key)
 
         if path not in manifest:
             raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {config.get_computed_manifest_path()}"
             )
+
+        manifest_entry = manifest[path]
 
         # Add the script by itself
         script_attrs = {
@@ -375,8 +378,10 @@ class DjangoViteAssetLoader:
                 f"at {config.get_computed_manifest_path()}"
             )
 
+        manifest_entry = manifest[path]
+
         return DjangoViteAssetLoader._generate_production_server_url(
-            self._manifest[path]["file"], config.static_url_prefix
+            manifest_entry.file, config.static_url_prefix
         )
 
     def generate_vite_legacy_polyfills(
@@ -406,18 +411,18 @@ class DjangoViteAssetLoader:
         """
 
         config = self._get_config(config_key)
-        manifest = self._get_manifest(config_key)
 
         if config.dev_mode:
             return ""
 
+        manifest = self._get_manifest(config_key)
         scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
 
-        for path, content in manifest.items():
+        for path, manifest_entry in manifest.items():
             if config.legacy_polyfills_motif in path:
                 return DjangoViteAssetLoader._generate_script_tag(
                     DjangoViteAssetLoader._generate_production_server_url(
-                        content["file"], config.static_url_prefix
+                        manifest_entry.file, config.static_url_prefix
                     ),
                     attrs=scripts_attrs,
                 )
@@ -587,6 +592,7 @@ class DjangoViteAssetLoader:
                     "DJANGO_VITE_STATIC_URL_PREFIX": "static_url_prefix",
                     "DJANGO_VITE_MANIFEST_PATH": "manifest_path",
                     "DJANGO_VITE_LEGACY_POLYFILLS_MOTIF": "legacy_polyfills_motif",
+                    "DJANGO_VITE_REACT_REFRESH_URL": "react_refresh_url",
                 }
 
                 config = {
@@ -597,11 +603,14 @@ class DjangoViteAssetLoader:
 
                 cls._instance._configs[DEFAULT_CONFIG_KEY] = DjangoViteConfig(**config)
 
+                # Manifest is only used in production.
+                if not cls._instance._configs[DEFAULT_CONFIG_KEY].dev_mode:
+                    cls._instance._parse_manifest(DEFAULT_CONFIG_KEY)
+
         return cls._instance
 
-    @classmethod
     def generate_vite_ws_client(
-        cls, config_key: str = DEFAULT_CONFIG_KEY, **kwargs: Dict[str, str]
+        self, config_key: str = DEFAULT_CONFIG_KEY, **kwargs: Dict[str, str]
     ) -> str:
         """
         Generates the script tag for the Vite WS client for HMR.
@@ -619,13 +628,13 @@ class DjangoViteAssetLoader:
                 script tags.
         """
 
-        config = cls._get_config(config_key)
+        config = self._get_config(config_key)
 
         if not config.dev_mode:
             return ""
 
-        return cls._generate_script_tag(
-            cls._generate_vite_server_url(config.ws_client_url, config),
+        return self._generate_script_tag(
+            self._generate_vite_server_url(config.ws_client_url, config),
             {"type": "module", **kwargs},
         )
 
@@ -704,7 +713,6 @@ class DjangoViteAssetLoader:
             urljoin(config.static_url, path),
         )
 
-    @classmethod
     def generate_vite_react_refresh_url(
         self, config_key: str = DEFAULT_CONFIG_KEY
     ) -> str:
@@ -778,7 +786,9 @@ def vite_hmr_client(
             script tags.
     """
 
-    return DjangoViteAssetLoader.generate_vite_ws_client(config_key, **kwargs)
+    return DjangoViteAssetLoader.instance().generate_vite_ws_client(
+        config_key, **kwargs
+    )
 
 
 @register.simple_tag
@@ -945,4 +955,4 @@ def vite_react_refresh(config_key: str = DEFAULT_CONFIG_KEY) -> str:
     Returns:
         str -- The script or an empty string.
     """
-    return DjangoViteAssetLoader.generate_vite_react_refresh_url(config_key)
+    return DjangoViteAssetLoader.instance().generate_vite_react_refresh_url(config_key)
