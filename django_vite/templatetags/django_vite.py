@@ -611,6 +611,8 @@ def vite_hmr_client(**kwargs: Dict[str, str]) -> str:
 @mark_safe
 def vite_asset(
     path: str,
+    *,
+    dev_only: bool = False,
     **kwargs: Dict[str, str],
 ) -> str:
     """
@@ -621,6 +623,7 @@ def vite_asset(
 
     Arguments:
         path {str} -- Path to a Vite JS/TS asset to include.
+        dev_only {bool} -- If True, only includes the asset in development.
 
     Returns:
         str -- All tags to import this file in your HTML page.
@@ -639,6 +642,9 @@ def vite_asset(
     """
 
     assert path is not None
+
+    if dev_only and not DJANGO_VITE_DEV_MODE:
+        return ""
 
     return DjangoViteAssetLoader.instance().generate_vite_asset(path, **kwargs)
 
