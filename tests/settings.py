@@ -1,12 +1,10 @@
 import os
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = Path(__file__).resolve().parent
 
-STATIC_URL = "static"
-DJANGO_VITE_DEV_MODE = True
-DJANGO_VITE_ASSETS_PATH = "/"
+STATIC_URL = "/static/"
 USE_TZ = True
-
 
 INSTALLED_APPS = [
     "django_vite",
@@ -26,3 +24,8 @@ TEMPLATES = [
         },
     },
 ]
+
+STATIC_ROOT = BASE_DIR / "data" / "staticfiles"
+
+DJANGO_VITE_DEV_MODE = True
+DJANGO_VITE_ASSETS_PATH = "/"

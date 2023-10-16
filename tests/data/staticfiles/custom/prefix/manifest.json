@@ -1,0 +1,72 @@
+{
+  "src/entry.ts": {
+    "css": ["assets/entry-74d0d5dd.css"],
+    "file": "assets/entry-29e38a60.js",
+    "imports": [
+      "_vue.esm-bundler-96356fb1.js",
+      "_index-62f37ad0.js",
+      "_vue.esm-bundler-49e6b475.js",
+      "__plugin-vue_export-helper-c27b6911.js",
+      "_messages-a0a9e13b.js",
+      "_use-outside-click-224980bf.js",
+      "_use-resolve-button-type-c5656cba.js",
+      "_use-event-listener-153dc639.js",
+      "_hidden-84ddb9a5.js",
+      "_apiClient-01d20438.js",
+      "_pinia-5d7892fd.js"
+    ],
+    "isEntry": true,
+    "src": "entry.ts"
+  },
+  "src/entry.css": {
+    "file": "assets/entry-74d0d5dd.css",
+    "src": "entry.css"
+  },
+  "src/extra.css": {
+    "file": "assets/extra-a9f3b2c1.css",
+    "src": "extra.css"
+  },
+  "_vue.esm-bundler-96356fb1.js": {
+    "file": "vue.esm-bundler-96356fb1.js"
+  },
+  "_index-62f37ad0.js": {
+    "file": "index-62f37ad0.js",
+    "imports": ["_vue.esm-bundler-49e6b475.js"]
+  },
+  "_vue.esm-bundler-49e6b475.js": {
+    "file": "vue.esm-bundler-49e6b475.js",
+    "imports": ["_vue.esm-bundler-96356fb1.js"]
+  },
+  "__plugin-vue_export-helper-c27b6911.js": {
+    "file": "_plugin-vue_export-helper-c27b6911.js"
+  },
+  "_messages-a0a9e13b.js": {
+    "css": ["assets/extra-a9f3b2c1.css"],
+    "file": "messages-a0a9e13b.js",
+    "imports": ["_pinia-5d7892fd.js", "_vue.esm-bundler-96356fb1.js"]
+  },
+  "_pinia-5d7892fd.js": {
+    "file": "pinia-5d7892fd.js",
+    "imports": ["_vue.esm-bundler-96356fb1.js"]
+  },
+  "_use-outside-click-224980bf.js": {
+    "file": "use-outside-click-224980bf.js",
+    "imports": ["_vue.esm-bundler-96356fb1.js"]
+  },
+  "_use-resolve-button-type-c5656cba.js": {
+    "file": "use-resolve-button-type-c5656cba.js",
+    "imports": ["_vue.esm-bundler-96356fb1.js", "_use-outside-click-224980bf.js"]
+  },
+  "_use-event-listener-153dc639.js": {
+    "file": "use-event-listener-153dc639.js",
+    "imports": ["_vue.esm-bundler-96356fb1.js", "_use-outside-click-224980bf.js"]
+  },
+  "_hidden-84ddb9a5.js": {
+    "file": "hidden-84ddb9a5.js",
+    "imports": ["_vue.esm-bundler-96356fb1.js", "_use-outside-click-224980bf.js"]
+  },
+  "_apiClient-01d20438.js": {
+    "css": ["assets/extra-a9f3b2c1.css"],
+    "file": "apiClient-01d20438.js"
+  }
+}

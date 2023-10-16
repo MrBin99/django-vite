@@ -1,0 +1,24 @@
+{
+    "../../vite/custom-motif-legacy": {
+      "file": "assets/polyfills-legacy-6e7a4b9c.js",
+      "isEntry": true,
+      "src": "../../vite/custom-motif-legacy"
+    },
+    "src/entry-legacy.ts": {
+      "file": "assets/entry-legacy-4c50596f.js",
+      "isEntry": true,
+      "src": "src/entry-legacy.ts"
+    },
+    "src/entry.css": {
+      "file": "assets/entry-5e7d9c21.css",
+      "src": "src/entry.css"
+    },
+    "src/entry.ts": {
+      "css": [
+        "assets/entry-5e7d9c21.css"
+      ],
+      "file": "assets/entry-8a2f6b3d.js",
+      "isEntry": true,
+      "src": "src/entry.ts"
+    }
+}

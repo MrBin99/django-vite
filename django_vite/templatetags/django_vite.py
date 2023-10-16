@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Callable
+from typing import Callable, Dict, List
 from urllib.parse import urljoin
 
 from django import template
@@ -8,8 +8,9 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.safestring import mark_safe
 
-register = template.Library()
+from django_vite.exceptions import DjangoViteAssetNotFoundError, DjangoViteManifestError
 
+register = template.Library()
 
 # If using in development or production mode.
 DJANGO_VITE_DEV_MODE = getattr(settings, "DJANGO_VITE_DEV_MODE", False)
@@ -104,7 +105,7 @@ class DjangoViteAssetLoader:
                 script tags.
 
         Raises:
-            RuntimeError: If cannot find the file path in the
+            DjangoViteAssetNotFoundError: If cannot find the file path in the
                 manifest (only in production).
 
         Returns:
@@ -119,7 +120,7 @@ class DjangoViteAssetLoader:
             )
 
         if not self._manifest or path not in self._manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
             )
@@ -152,9 +153,7 @@ class DjangoViteAssetLoader:
         for dep in manifest_entry.get("imports", []):
             dep_manifest_entry = self._manifest[dep]
             dep_file = dep_manifest_entry["file"]
-            url = DjangoViteAssetLoader._generate_production_server_url(
-                dep_file
-            )
+            url = DjangoViteAssetLoader._generate_production_server_url(dep_file)
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
                     url,
@@ -182,7 +181,7 @@ class DjangoViteAssetLoader:
             str -- All tags to preload this file in your HTML page.
 
         Raises:
-            RuntimeError: If cannot find the file path in the
+            DjangoViteAssetNotFoundError: if cannot find the file path in the
                 manifest.
 
         Returns:
@@ -193,7 +192,7 @@ class DjangoViteAssetLoader:
             return ""
 
         if not self._manifest or path not in self._manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
             )
@@ -210,9 +209,7 @@ class DjangoViteAssetLoader:
         }
 
         manifest_file = manifest_entry["file"]
-        url = DjangoViteAssetLoader._generate_production_server_url(
-            manifest_file
-        )
+        url = DjangoViteAssetLoader._generate_production_server_url(manifest_file)
         tags.append(
             DjangoViteAssetLoader._generate_preload_tag(
                 url,
@@ -227,9 +224,7 @@ class DjangoViteAssetLoader:
         for dep in manifest_entry.get("imports", []):
             dep_manifest_entry = self._manifest[dep]
             dep_file = dep_manifest_entry["file"]
-            url = DjangoViteAssetLoader._generate_production_server_url(
-                dep_file
-            )
+            url = DjangoViteAssetLoader._generate_production_server_url(dep_file)
             tags.append(
                 DjangoViteAssetLoader._generate_preload_tag(
                     url,
@@ -285,10 +280,8 @@ class DjangoViteAssetLoader:
         if "css" in manifest_entry:
             for css_path in manifest_entry["css"]:
                 if css_path not in already_processed:
-                    url = (
-                        DjangoViteAssetLoader._generate_production_server_url(
-                            css_path
-                        )
+                    url = DjangoViteAssetLoader._generate_production_server_url(
+                        css_path
                     )
                     tags.append(tag_generator(url))
 
@@ -305,7 +298,7 @@ class DjangoViteAssetLoader:
             path {str} -- Path to a Vite asset.
 
         Raises:
-            RuntimeError: If cannot find the asset path in the
+            DjangoViteAssetNotFoundError: If cannot find the asset path in the
                 manifest (only in production).
 
         Returns:
@@ -316,7 +309,7 @@ class DjangoViteAssetLoader:
             return DjangoViteAssetLoader._generate_vite_server_url(path)
 
         if not self._manifest or path not in self._manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
             )
@@ -340,7 +333,7 @@ class DjangoViteAssetLoader:
                 script tags.
 
         Raises:
-            RuntimeError: If polyfills path not found inside
+            DjangoViteAssetNotFoundError: If polyfills path not found inside
                 the 'manifest.json' (only in production).
 
         Returns:
@@ -361,7 +354,7 @@ class DjangoViteAssetLoader:
                     attrs=scripts_attrs,
                 )
 
-        raise RuntimeError(
+        raise DjangoViteAssetNotFoundError(
             f"Vite legacy polyfills not found in manifest "
             f"at {DJANGO_VITE_MANIFEST_PATH}"
         )
@@ -385,7 +378,7 @@ class DjangoViteAssetLoader:
                 script tags.
 
         Raises:
-            RuntimeError: If cannot find the asset path in the
+            DjangoViteAssetNotFoundError: If cannot find the asset path in the
                 manifest (only in production).
 
         Returns:
@@ -396,7 +389,7 @@ class DjangoViteAssetLoader:
             return ""
 
         if not self._manifest or path not in self._manifest:
-            raise RuntimeError(
+            raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} in Vite manifest "
                 f"at {DJANGO_VITE_MANIFEST_PATH}"
             )
@@ -416,7 +409,8 @@ class DjangoViteAssetLoader:
         Read and parse the Vite manifest file.
 
         Raises:
-            RuntimeError: if cannot load the file or JSON in file is malformed.
+            DjangoViteManifestError: if cannot load the file or JSON in file is
+            malformed.
         """
 
         try:
@@ -424,7 +418,7 @@ class DjangoViteAssetLoader:
                 manifest_content = manifest_file.read()
             self._manifest = json.loads(manifest_content)
         except Exception as error:
-            raise RuntimeError(
+            raise DjangoViteManifestError(
                 f"Cannot read Vite manifest file at "
                 f"{DJANGO_VITE_MANIFEST_PATH} : {str(error)}"
             ) from error
@@ -523,9 +517,7 @@ class DjangoViteAssetLoader:
 
     @staticmethod
     def _generate_preload_tag(href: str, attrs: Dict[str, str]) -> str:
-        attrs_str = " ".join(
-            [f'{key}="{value}"' for key, value in attrs.items()]
-        )
+        attrs_str = " ".join([f'{key}="{value}"' for key, value in attrs.items()])
 
         return f'<link href="{href}" {attrs_str} />'
 
@@ -673,7 +665,6 @@ def vite_preload_asset(
             manifest (only in production).
 
     """
-
     assert path is not None
 
     return DjangoViteAssetLoader.instance().preload_vite_asset(path)
