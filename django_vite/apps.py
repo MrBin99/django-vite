@@ -3,8 +3,8 @@ from contextlib import suppress
 from django.apps import AppConfig
 from django.core.checks import Warning, register
 
-from .templatetags.django_vite import DjangoViteAssetLoader
 from .exceptions import DjangoViteManifestError
+from .templatetags.django_vite import DjangoViteAssetLoader
 
 
 class DjangoViteAppConfig(AppConfig):

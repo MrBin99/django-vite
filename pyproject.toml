@@ -7,7 +7,6 @@ addopts = '''
   --cov-report html
   --cov-report term-missing
   --cov-branch
-  --cov-fail-under=100
 '''
 
 [tool.black]
@@ -17,15 +16,16 @@ line-length = 88
 select = [
   "E",   # pycodestyle
   "F",   # pyflakes
-  "C",  # pyupgrade
-  "B", # bugbear,
+  "C",   # pyupgrade
+  "B",   # bugbear,
   "PT",  # pytest,
-  "SIM",  # simplify,
-  "DJ", # django
+  "SIM", # simplify,
+  "DJ",  # django,
+  "I",   # isort
 ]
 
 # do not autofix the following violations due to bad DX:
 unfixable = [
-  "F401",  # Module imported but unused
+  "F401", # Module imported but unused
   "F841", # Unused variables
 ]

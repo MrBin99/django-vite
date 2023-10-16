@@ -8,7 +8,7 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.safestring import mark_safe
 
-from django_vite.exceptions import DjangoViteManifestError, DjangoViteAssetNotFoundError
+from django_vite.exceptions import DjangoViteAssetNotFoundError, DjangoViteManifestError
 
 DEFAULT_CONFIG_KEY = "default"
 
