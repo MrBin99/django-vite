@@ -1,26 +1,20 @@
 from typing import Dict, Any
 import pytest
-from importlib import reload
-from django.apps import apps
-from django_vite.templatetags import django_vite
+
+from django_vite.loader import DjangoViteAssetLoader
 
 
 def reload_django_vite():
-    reload(django_vite)
-    django_vite_app_config = apps.get_app_config("django_vite")
-    django_vite_app_config.ready()
+    DjangoViteAssetLoader._instance = None
+    DjangoViteAssetLoader.instance()
 
 
 @pytest.fixture()
 def patch_settings(settings):
     """
     1. Patch new settings into django.conf.settings.
-    2. Reload django_vite module so that variables on the module level that use settings
-    get recalculated.
+    2. Recreate DjangoViteAssetLoader._instance with new settings applied.
     3. Restore the original settings once the test is over.
-
-    TODO: refactor django_vite so that we don't set variables on the module level using
-    settings.
     """
     __PYTEST_EMPTY__ = "__PYTEST_EMPTY__"
     original_settings_cache = {}

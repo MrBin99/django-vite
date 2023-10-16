@@ -1,5 +1,7 @@
 import pytest
+from contextlib import suppress
 
+from django_vite.exceptions import DjangoViteManifestError
 from django_vite.templatetags.django_vite import DjangoViteAssetLoader
 from django_vite.apps import check_loader_instance
 
@@ -21,12 +23,13 @@ def test_check_loader_instance_happy(patch_settings):
 
 
 def test_check_loader_instance_warnings(patch_settings):
-    patch_settings(
-        {
-            "DJANGO_VITE_DEV_MODE": False,
-            "DJANGO_VITE_MANIFEST_PATH": "fake.json",
-        }
-    )
+    with suppress(DjangoViteManifestError):
+        patch_settings(
+            {
+                "DJANGO_VITE_DEV_MODE": False,
+                "DJANGO_VITE_MANIFEST_PATH": "fake.json",
+            }
+        )
     DjangoViteAssetLoader._instance = None
     warnings = check_loader_instance()
     assert len(warnings) == 1
