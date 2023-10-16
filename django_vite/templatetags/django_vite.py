@@ -536,7 +536,7 @@ class DjangoViteAssetLoader:
         return urljoin(
             f"{DJANGO_VITE_DEV_SERVER_PROTOCOL}://"
             f"{DJANGO_VITE_DEV_SERVER_HOST}:{DJANGO_VITE_DEV_SERVER_PORT}",
-            urljoin(DJANGO_VITE_STATIC_URL, path),
+            urljoin(DJANGO_VITE_STATIC_URL, "./" + path),
         )
 
     @classmethod
