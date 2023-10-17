@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Callable, NamedTuple, Optional, Union, Tuple
+from typing import Dict, List, Callable, NamedTuple, Optional, Union
 from urllib.parse import urljoin
 import warnings
 
@@ -71,7 +71,7 @@ class ManifestClient:
         get(path: str) -- return the ManifestEntry for the given path.
     """
 
-    def __init__(self, config: DjangoViteConfig):
+    def __init__(self, config: DjangoViteConfig) -> None:
         self._config = config
 
         self.dev_mode = config.dev_mode
@@ -105,7 +105,13 @@ class ManifestClient:
         else:
             return initial_manifest_path
 
-    def _parse_manifest(self) -> Tuple[Dict[str, ManifestEntry], ManifestEntry]:
+    class ParsedManifestOutput(NamedTuple):
+        # all entries within the manifest
+        entries: Dict[str, ManifestEntry]
+        # The manifest entry for legacy polyfills, if it exists within the manifest
+        legacy_polyfills_entry: Optional[ManifestEntry]
+
+    def _parse_manifest(self) -> ParsedManifestOutput:
         """
         Read and parse the Vite manifest file.
 
@@ -133,7 +139,7 @@ class ManifestClient:
                     if self.legacy_polyfills_motif in path:
                         legacy_polyfills_entry = manifest_entry
 
-                return (entries, legacy_polyfills_entry)
+                return self.ParsedManifestOutput(entries, legacy_polyfills_entry)
 
         except Exception as error:
             raise DjangoViteManifestError(
@@ -365,7 +371,7 @@ class DjangoViteAppClient:
         return self._generate_css_files_of_asset(
             path,
             tag_generator=TagGenerator.stylesheet_preload,
-        )[0]
+        ).tags
 
     def _load_css_files_of_asset(
         self,
@@ -374,14 +380,20 @@ class DjangoViteAppClient:
         return self._generate_css_files_of_asset(
             path,
             tag_generator=TagGenerator.stylesheet,
-        )[0]
+        ).tags
+
+    class GeneratedCssFilesOutput(NamedTuple):
+        # list of generated CSS tags
+        tags: List[Tag]
+        # list of already processed CSS tags
+        already_processed: List[str]
 
     def _generate_css_files_of_asset(
         self,
         path: str,
         already_processed: Optional[List[str]] = None,
         tag_generator: Callable[[str], Tag] = TagGenerator.stylesheet,
-    ) -> Tuple[List[Tag], List[str]]:
+    ) -> GeneratedCssFilesOutput:
         """
         Generates all CSS tags for dependencies of an asset.
 
@@ -412,7 +424,7 @@ class DjangoViteAppClient:
 
             already_processed.append(css_path)
 
-        return (tags, already_processed)
+        return self.GeneratedCssFilesOutput(tags, already_processed)
 
     def generate_vite_asset_url(self, path: str) -> str:
         """
