@@ -1,7 +1,7 @@
 from typing import Dict, Any
 import pytest
 
-from django_vite.loader import DjangoViteAssetLoader
+from django_vite.core.asset_loader import DjangoViteAssetLoader
 
 
 def reload_django_vite():

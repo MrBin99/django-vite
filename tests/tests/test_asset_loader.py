@@ -1,7 +1,7 @@
 import pytest
 from contextlib import suppress
 
-from django_vite.exceptions import DjangoViteManifestError
+from django_vite.core.exceptions import DjangoViteManifestError
 from django_vite.templatetags.django_vite import DjangoViteAssetLoader
 from django_vite.apps import check_loader_instance
 

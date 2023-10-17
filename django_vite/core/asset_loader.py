@@ -7,12 +7,12 @@ import warnings
 from django.apps import apps
 from django.conf import settings
 
-from django_vite.exceptions import (
+from django_vite.core.exceptions import (
     DjangoViteManifestError,
     DjangoViteAssetNotFoundError,
     DjangoViteConfigNotFoundError,
 )
-from django_vite.tag_generator import Tag, TagGenerator
+from django_vite.core.tag_generator import Tag, TagGenerator
 
 DEFAULT_APP_NAME = "default"
 

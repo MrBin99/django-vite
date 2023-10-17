@@ -1,7 +1,7 @@
 import pytest
 from bs4 import BeautifulSoup
 from django.template import Context, Template
-from django_vite.exceptions import DjangoViteAssetNotFoundError
+from django_vite.core.exceptions import DjangoViteAssetNotFoundError
 
 
 def test_vite_legacy_asset_returns_nothing_with_dev_mode_on():
