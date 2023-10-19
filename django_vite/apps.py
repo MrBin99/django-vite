@@ -1,10 +1,7 @@
-from contextlib import suppress
-
 from django.apps import AppConfig
-from django.core.checks import Warning, register
+from django.core import checks
 
-from .core.exceptions import DjangoViteManifestError
-from .templatetags.django_vite import DjangoViteAssetLoader
+from django_vite.core.asset_loader import DjangoViteAssetLoader
 
 
 class DjangoViteAppConfig(AppConfig):
@@ -12,29 +9,13 @@ class DjangoViteAppConfig(AppConfig):
     verbose_name = "Django Vite"
 
     def ready(self) -> None:
-        with suppress(DjangoViteManifestError):
-            # Create Loader instance at startup to prevent threading problems,
-            # but do not crash while doing so.
-            DjangoViteAssetLoader.instance()
-
-
-@register
-def check_loader_instance(**kwargs):
-    """Raise a warning during startup when instance retrieval fails."""
-
-    try:
         # Make Loader instance at startup to prevent threading problems
+        # but do not crash while doing so.
         DjangoViteAssetLoader.instance()
-        return []
-    except DjangoViteManifestError as exception:
-        return [
-            Warning(
-                exception,
-                id="DJANGO_VITE",
-                hint=(
-                    "Make sure you have generated a manifest file, "
-                    "and that the DJANGO_VITE_MANIFEST_PATH points "
-                    "to the correct location."
-                ),
-            )
-        ]
+
+        # Check for potential errors with loading manifests in DjangoViteConfigs.
+        checks.register(check_loader_instance, checks.Tags.staticfiles)
+
+
+def check_loader_instance(**kwargs):
+    return DjangoViteAssetLoader.instance().check(**kwargs)

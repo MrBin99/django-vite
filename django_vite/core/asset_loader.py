@@ -6,6 +6,7 @@ import warnings
 
 from django.apps import apps
 from django.conf import settings
+from django.core.checks import Warning
 
 from django_vite.core.exceptions import (
     DjangoViteManifestError,
@@ -71,8 +72,11 @@ class ManifestClient:
         get(path: str) -- return the ManifestEntry for the given path.
     """
 
-    def __init__(self, config: DjangoViteConfig) -> None:
+    def __init__(
+        self, config: DjangoViteConfig, app_name: str = DEFAULT_APP_NAME
+    ) -> None:
         self._config = config
+        self.app_name = app_name
 
         self.dev_mode = config.dev_mode
         self.manifest_path = self._clean_manifest_path()
@@ -81,8 +85,14 @@ class ManifestClient:
         self._entries: Dict[str, ManifestEntry] = {}
         self.legacy_polyfills_entry: Optional[ManifestEntry] = None
 
+        # Don't crash if there is an error while parsing manifest.json.
+        # Running DjangoViteAssetLoader.instance().checks() on startup will log any
+        # errors.
         if not self.dev_mode:
-            self._entries, self.legacy_polyfills_entry = self._parse_manifest()
+            try:
+                self._entries, self.legacy_polyfills_entry = self._parse_manifest()
+            except DjangoViteManifestError:
+                pass
 
     def _clean_manifest_path(self) -> Path:
         """
@@ -105,11 +115,30 @@ class ManifestClient:
         else:
             return initial_manifest_path
 
+    def check(self) -> List[Warning]:
+        """Check that manifest files are valid when dev_mode=False."""
+        try:
+            if not self.dev_mode:
+                self._parse_manifest()
+            return []
+        except DjangoViteManifestError as exception:
+            return [
+                Warning(
+                    exception,
+                    id="django_vite.W001",
+                    hint=(
+                        f"Make sure you have generated a manifest file, "
+                        f'and that DJANGO_VITE["{self.app_name}"]["manifest_path"] '
+                        "points to the correct location."
+                    ),
+                )
+            ]
+
     class ParsedManifestOutput(NamedTuple):
         # all entries within the manifest
-        entries: Dict[str, ManifestEntry]
+        entries: Dict[str, ManifestEntry] = {}
         # The manifest entry for legacy polyfills, if it exists within the manifest
-        legacy_polyfills_entry: Optional[ManifestEntry]
+        legacy_polyfills_entry: Optional[ManifestEntry] = None
 
     def _parse_manifest(self) -> ParsedManifestOutput:
         """
@@ -125,6 +154,9 @@ class ManifestClient:
             DjangoViteManifestError: if cannot load the file or JSON in file is
                 malformed.
         """
+        if self.dev_mode:
+            return self.ParsedManifestOutput()
+
         entries: Dict[str, ManifestEntry] = {}
         legacy_polyfills_entry: Optional[ManifestEntry] = None
 
@@ -143,7 +175,7 @@ class ManifestClient:
 
         except Exception as error:
             raise DjangoViteManifestError(
-                f"Cannot read Vite manifest file at "
+                f"Cannot read Vite manifest file for app {self.app_name} at "
                 f"{self.manifest_path} : {str(error)}"
             ) from error
 
@@ -160,7 +192,8 @@ class ManifestClient:
         """
         if path not in self._entries:
             raise DjangoViteAssetNotFoundError(
-                f"Cannot find {path} in Vite manifest " f"at {self.manifest_path}"
+                f"Cannot find {path} for app={self.app_name} in Vite manifest at "
+                f"{self.manifest_path}"
             )
 
         return self._entries[path]
@@ -172,8 +205,11 @@ class DjangoViteAppClient:
     DjangoViteConfig provides the arguments for the client.
     """
 
-    def __init__(self, config: DjangoViteConfig) -> None:
+    def __init__(
+        self, config: DjangoViteConfig, app_name: str = DEFAULT_APP_NAME
+    ) -> None:
         self._config = config
+        self.app_name = app_name
 
         self.dev_mode = config.dev_mode
         self.dev_server_protocol = config.dev_server_protocol
@@ -183,7 +219,7 @@ class DjangoViteAppClient:
         self.ws_client_url = config.ws_client_url
         self.react_refresh_url = config.react_refresh_url
 
-        self.manifest = ManifestClient(config)
+        self.manifest = ManifestClient(config, app_name)
 
     def _get_dev_server_url(
         self,
@@ -622,6 +658,14 @@ class DjangoViteAssetLoader:
 
         return cls._instance
 
+    def check(self, **kwargs) -> List[Warning]:
+        """Check that manifest files are valid for apps with dev_mode=False."""
+        errors: List[Warning] = []
+        for app_client in self._apps.values():
+            manifest_warnings = app_client.manifest.check()
+            errors.extend(manifest_warnings)
+        return errors
+
     @classmethod
     def _apply_django_vite_settings(cls):
         """
@@ -637,7 +681,7 @@ class DjangoViteAssetLoader:
         for app_name, config in django_vite_settings.items():
             if not isinstance(config, DjangoViteConfig):
                 config = DjangoViteConfig(**config)
-            cls._instance._apps[app_name] = DjangoViteAppClient(config)
+            cls._instance._apps[app_name] = DjangoViteAppClient(config, app_name)
 
     @classmethod
     def _apply_legacy_django_vite_settings(cls):
