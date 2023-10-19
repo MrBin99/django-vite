@@ -33,7 +33,7 @@ class DjangoViteConfig(NamedTuple):
     dev_server_host: str = "localhost"
 
     # Default Vite server port.
-    dev_server_port: int = 3000
+    dev_server_port: int = 5173
 
     # Prefix for STATIC_URL.
     static_url_prefix: str = ""
@@ -720,12 +720,15 @@ class DjangoViteAssetLoader:
             DeprecationWarning,
         )
 
-        legacy_config = {}
+        # Keep same default dev_server_port for legacy users that are still on vite v2.
+        legacy_config = {
+            "dev_server_port": 3000,
+        }
+
         for legacy_setting in applied_legacy_settings:
             new_config_name = cls.LEGACY_DJANGO_VITE_SETTINGS[legacy_setting]
             if new_config_name:
                 legacy_config[new_config_name] = getattr(settings, legacy_setting)
-
         legacy_config = DjangoViteConfig(**legacy_config)
         cls._instance._apps[DEFAULT_APP_NAME] = DjangoViteAppClient(legacy_config)
 
