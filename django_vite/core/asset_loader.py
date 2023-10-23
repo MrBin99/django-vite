@@ -705,7 +705,7 @@ class DjangoViteAssetLoader:
         if cls.DJANGO_VITE in applied_settings:
             warnings.warn(
                 f"You're mixing the new {cls.DJANGO_VITE} setting with these "
-                f"legacy settings: [{applied_legacy_settings.join(',')}]. Those legacy "
+                f"legacy settings: [{', '.join(applied_legacy_settings)}]. Those legacy "
                 f"settings will be ignored since you have a {cls.DJANGO_VITE}"
                 " setting configured. Please remove those legacy django-vite settings.",
                 DeprecationWarning,
