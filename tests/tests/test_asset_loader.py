@@ -9,34 +9,41 @@ def test_django_vite_asset_loader_cannot_be_instantiated():
         DjangoViteAssetLoader()
 
 
-def test_check_loader_instance_happy(patch_settings):
-    patch_settings(
-        {
-            "DJANGO_VITE_DEV_MODE": False,
-        }
-    )
+@pytest.mark.usefixtures("patch_dev_mode_false")
+def test_check_loader_instance_happy():
     warnings = DjangoViteAssetLoader.instance().check()
     assert len(warnings) == 0
 
 
-def test_check_loader_instance_warnings(patch_settings):
-    patch_settings(
+@pytest.mark.parametrize(
+    "patch_settings",
+    [
         {
             "DJANGO_VITE_DEV_MODE": False,
             "DJANGO_VITE_MANIFEST_PATH": "fake.json",
-        }
-    )
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                    "manifest_path": "fake.json",
+                }
+            }
+        },
+    ],
+    indirect=True,
+)
+def test_check_loader_instance_warnings(patch_settings):
     warnings = DjangoViteAssetLoader.instance().check()
     assert len(warnings) == 1
     assert "Make sure you have generated a manifest file" in warnings[0].hint
 
 
-def test_apply_fallback(delete_settings):
+def test_apply_fallback():
     """
     Test that a fallback "default" app is made even when there are no DJANGO_VITE
     settings defined.
     """
-    delete_settings("DJANGO_VITE_DEV_MODE")
     default_app = DjangoViteAssetLoader.instance()._apps["default"]
     assert default_app
     assert default_app._config == DjangoViteConfig()

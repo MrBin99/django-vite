@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 import pytest
 
 from django_vite.core.asset_loader import DjangoViteAssetLoader
@@ -13,7 +13,7 @@ def reload_django_vite():
 
 
 @pytest.fixture()
-def patch_settings(settings):
+def patch_settings(request, settings):
     """
     1. Patch new settings into django.conf.settings.
     2. Recreate DjangoViteAssetLoader._instance with new settings applied.
@@ -31,7 +31,12 @@ def patch_settings(settings):
                 setattr(settings, key, value)
         reload_django_vite()
 
-    yield _patch_settings
+    # Apply pytest.mark.parametrize params, if patch_settings was invoked from
+    # @pytest.mark.parametrize("patch_settings", [param1, param2], indirect=True)
+    if hasattr(request, "param"):
+        yield _patch_settings(request.param)
+    else:
+        yield _patch_settings
 
     for key, value in original_settings_cache.items():
         if value == __PYTEST_EMPTY__:
@@ -49,11 +54,50 @@ def delete_settings(patch_settings):
 
     def _delete_settings(*settings_to_delete: str):
         new_settings = {key: __PYTEST_DELETE__ for key in settings_to_delete}
-        patch_settings(new_settings)
+        return patch_settings(new_settings)
 
     return _delete_settings
 
 
-@pytest.fixture()
-def dev_mode_off(patch_settings):
-    patch_settings({"DJANGO_VITE_DEV_MODE": False})
+@pytest.fixture(
+    params=[
+        {
+            "DJANGO_VITE_DEV_MODE": False,
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                }
+            }
+        },
+    ]
+)
+def patch_dev_mode_false(request, patch_settings):
+    """
+    Run a test with dev_mode=False, parameterized to run under both versions of
+    settings that we support.
+    """
+    return patch_settings(request.param)
+
+
+@pytest.fixture(
+    params=[
+        {
+            "DJANGO_VITE_DEV_MODE": True,
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": True,
+                }
+            }
+        },
+    ]
+)
+def patch_dev_mode_true(request, patch_settings):
+    """
+    Run a test with dev_mode=True, parameterized to run under both versions of
+    settings that we support.
+    """
+    return patch_settings(request.param)

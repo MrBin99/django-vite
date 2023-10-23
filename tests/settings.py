@@ -26,5 +26,3 @@ TEMPLATES = [
 ]
 
 STATIC_ROOT = BASE_DIR / "data" / "staticfiles"
-
-DJANGO_VITE_DEV_MODE = True
