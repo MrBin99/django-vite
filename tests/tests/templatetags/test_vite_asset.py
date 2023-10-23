@@ -171,3 +171,57 @@ def test_vite_asset_production_staticfiles_storage(patch_settings):
     assert script_tag["type"] == "module"
     links = soup.find_all("link")
     assert len(links) == 13
+
+
+@pytest.mark.usefixtures("patch_dev_mode_false")
+def test_vite_asset_override_default_production_attribute():
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset "src/entry.ts" crossorigin="anonymous" %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.find("script")
+    assert script_tag["crossorigin"] == "anonymous"
+
+
+@pytest.mark.parametrize(
+    "patch_settings",
+    [
+        {
+            "DJANGO_VITE_DEV_MODE": False,
+        },
+        {
+            "DJANGO_VITE_DEV_MODE": True,
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                }
+            }
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": True,
+                }
+            }
+        },
+    ],
+    indirect=True,
+)
+def test_vite_asset_custom_attributes(patch_settings):
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset "src/entry.ts" foo="bar" hello="world" %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.find("script")
+    assert script_tag["foo"] == "bar"
+    assert script_tag["hello"] == "world"
