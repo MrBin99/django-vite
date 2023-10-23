@@ -540,11 +540,15 @@ class DjangoViteAssetLoader:
         )
 
     @classmethod
-    def generate_vite_react_refresh_url(cls) -> str:
+    def generate_vite_react_refresh_url(cls, **kwargs) -> str:
         """
         Generates the script for the Vite React Refresh for HMR.
         Only used in development, in production this method returns
         an empty string.
+
+        Keyword Arguments:
+            **kwargs {Dict[str, str]} -- Adds new attributes to generated
+                script tags.
 
         Returns:
             str -- The script or an empty string.
@@ -553,7 +557,9 @@ class DjangoViteAssetLoader:
         if not DJANGO_VITE_DEV_MODE:
             return ""
 
-        return f"""<script type="module">
+        attrs_str = " ".join([f'{key}="{value}"' for key, value in kwargs.items()])
+
+        return f"""<script type="module" {attrs_str}>
             import RefreshRuntime from \
             '{cls._generate_vite_server_url(DJANGO_VITE_REACT_REFRESH_URL)}'
             RefreshRuntime.injectIntoGlobalHook(window)
@@ -750,13 +756,17 @@ def vite_legacy_asset(
 
 @register.simple_tag
 @mark_safe
-def vite_react_refresh() -> str:
+def vite_react_refresh(**kwargs: Dict[str, str]) -> str:
     """
     Generates the script for the Vite React Refresh for HMR.
     Only used in development, in production this method returns
     an empty string.
 
+    Keyword Arguments:
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
+
     Returns:
         str -- The script or an empty string.
     """
-    return DjangoViteAssetLoader.generate_vite_react_refresh_url()
+    return DjangoViteAssetLoader.generate_vite_react_refresh_url(**kwargs)
