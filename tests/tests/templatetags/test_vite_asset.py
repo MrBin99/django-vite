@@ -8,13 +8,22 @@ from django_vite.core.exceptions import (
 
 
 @pytest.mark.usefixtures("dev_mode_true")
-def test_vite_asset_returns_dev_tags():
-    template = Template(
+@pytest.mark.parametrize("as_default", [True, False])
+def test_vite_asset_returns_dev_tags(as_default):
+    if as_default:
+        template = Template(
+            """
+            {% load django_vite %}
+            {% vite_asset "src/entry.ts" app="default" %}
         """
-        {% load django_vite %}
-        {% vite_asset "src/entry.ts" %}
-    """
-    )
+        )
+    else:
+        template = Template(
+            """
+            {% load django_vite %}
+            {% vite_asset "src/entry.ts" %}
+        """
+        )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
@@ -23,13 +32,22 @@ def test_vite_asset_returns_dev_tags():
 
 
 @pytest.mark.usefixtures("dev_mode_false")
-def test_vite_asset_returns_production_tags():
-    template = Template(
+@pytest.mark.parametrize("as_default", [True, False])
+def test_vite_asset_returns_production_tags(as_default):
+    if as_default:
+        template = Template(
+            """
+            {% load django_vite %}
+            {% vite_asset "src/entry.ts" app="default" %}
         """
-        {% load django_vite %}
-        {% vite_asset "src/entry.ts" %}
-    """
-    )
+        )
+    else:
+        template = Template(
+            """
+            {% load django_vite %}
+            {% vite_asset "src/entry.ts" %}
+        """
+        )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
@@ -215,3 +233,54 @@ def test_vite_asset_nonexistent_app(dev_mode_true):
         template.render(Context({}))
 
     assert "Cannot find bad_app in DJANGO_VITE settings" in str(error)
+
+
+@pytest.fixture()
+def external_vue_app(patch_settings, settings):
+    def _wrapper(dev_mode: bool):
+        return patch_settings(
+            {
+                "DJANGO_VITE": {
+                    "external_vue_app": {
+                        "dev_mode": dev_mode,
+                        "static_url_prefix": "custom/prefix",
+                        "dev_server_port": 5555,
+                        "manifest_path": settings.STATIC_ROOT.parent
+                        / "external_vue_app"
+                        / "manifest.json",
+                    }
+                }
+            }
+        )
+
+    return _wrapper
+
+
+def test_vite_asset_external_app_dev(external_vue_app):
+    external_vue_app(dev_mode=True)
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset "src/entry.js" app="external_vue_app" %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.find("script")
+    assert (
+        script_tag["src"] == "http://localhost:5555/static/custom/prefix/src/entry.js"
+    )
+
+
+def test_vite_asset_external_app_production(external_vue_app):
+    external_vue_app(dev_mode=False)
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset "src/entry.js" app="external_vue_app" %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.find("script")
+    assert script_tag["src"] == "custom/prefix/assets/entry-5c085aac.js"
