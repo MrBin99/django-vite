@@ -1,10 +1,13 @@
 import pytest
 from bs4 import BeautifulSoup
 from django.template import Context, Template, TemplateSyntaxError
-from django_vite.core.exceptions import DjangoViteAssetNotFoundError
+from django_vite.core.exceptions import (
+    DjangoViteAssetNotFoundError,
+    DjangoViteConfigNotFoundError,
+)
 
 
-@pytest.mark.usefixtures("patch_dev_mode_true")
+@pytest.mark.usefixtures("dev_mode_true")
 def test_vite_asset_returns_dev_tags():
     template = Template(
         """
@@ -19,7 +22,7 @@ def test_vite_asset_returns_dev_tags():
     assert script_tag["type"] == "module"
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
+@pytest.mark.usefixtures("dev_mode_false")
 def test_vite_asset_returns_production_tags():
     template = Template(
         """
@@ -36,7 +39,7 @@ def test_vite_asset_returns_production_tags():
     assert len(links) == 13
 
 
-@pytest.mark.usefixtures("patch_dev_mode_true")
+@pytest.mark.usefixtures("dev_mode_true")
 def test_vite_asset_raises_without_path():
     with pytest.raises(TemplateSyntaxError):
         Template(
@@ -47,7 +50,7 @@ def test_vite_asset_raises_without_path():
         )
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
+@pytest.mark.usefixtures("dev_mode_false")
 def test_vite_asset_raises_nonexistent_entry():
     with pytest.raises(DjangoViteAssetNotFoundError):
         template = Template(
@@ -151,7 +154,7 @@ def test_vite_asset_production_prefix(patch_settings):
     assert len(links) == 13
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
+@pytest.mark.usefixtures("dev_mode_false")
 def test_vite_asset_production_staticfiles_storage(patch_settings):
     patch_settings(
         {
@@ -173,8 +176,8 @@ def test_vite_asset_production_staticfiles_storage(patch_settings):
     assert len(links) == 13
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
-def test_vite_asset_override_default_production_attribute():
+@pytest.mark.usefixtures("dev_mode_all")
+def test_vite_asset_override_default_attribute():
     template = Template(
         """
         {% load django_vite %}
@@ -187,33 +190,7 @@ def test_vite_asset_override_default_production_attribute():
     assert script_tag["crossorigin"] == "anonymous"
 
 
-@pytest.mark.parametrize(
-    "patch_settings",
-    [
-        {
-            "DJANGO_VITE_DEV_MODE": False,
-        },
-        {
-            "DJANGO_VITE_DEV_MODE": True,
-        },
-        {
-            "DJANGO_VITE": {
-                "default": {
-                    "dev_mode": False,
-                }
-            }
-        },
-        {
-            "DJANGO_VITE": {
-                "default": {
-                    "dev_mode": True,
-                }
-            }
-        },
-    ],
-    indirect=True,
-)
-def test_vite_asset_custom_attributes(patch_settings):
+def test_vite_asset_custom_attributes(dev_mode_all):
     template = Template(
         """
         {% load django_vite %}
@@ -225,3 +202,16 @@ def test_vite_asset_custom_attributes(patch_settings):
     script_tag = soup.find("script")
     assert script_tag["foo"] == "bar"
     assert script_tag["hello"] == "world"
+
+
+def test_vite_asset_nonexistent_app(dev_mode_true):
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset "src/entry.ts" app="bad_app" %}
+    """
+    )
+    with pytest.raises(DjangoViteConfigNotFoundError) as error:
+        template.render(Context({}))
+
+    assert "Cannot find bad_app in DJANGO_VITE settings" in str(error)

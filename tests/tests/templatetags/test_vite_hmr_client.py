@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from django.template import Context, Template
 
 
-@pytest.mark.usefixtures("patch_dev_mode_true")
+@pytest.mark.usefixtures("dev_mode_true")
 def test_vite_hmr_client_returns_script_tag():
     template = Template(
         """
@@ -18,7 +18,7 @@ def test_vite_hmr_client_returns_script_tag():
     assert script_tag["type"] == "module"
 
 
-@pytest.mark.usefixtures("patch_dev_mode_true")
+@pytest.mark.usefixtures("dev_mode_true")
 def test_vite_hmr_client_kwargs():
     template = Template(
         """
@@ -33,8 +33,8 @@ def test_vite_hmr_client_kwargs():
     assert script_tag["blocking"] == "render"
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
-def test_vite_hmr_client_returns_nothing_with_patch_dev_mode_false():
+@pytest.mark.usefixtures("dev_mode_false")
+def test_vite_hmr_client_returns_nothing_with_dev_mode_false():
     template = Template(
         """
         {% load django_vite %}

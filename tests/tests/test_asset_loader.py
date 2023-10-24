@@ -1,7 +1,8 @@
 import pytest
 
-from django_vite.core.asset_loader import DjangoViteConfig
+from django_vite.core.asset_loader import DjangoViteConfig, ManifestClient
 from django_vite.templatetags.django_vite import DjangoViteAssetLoader
+from django_vite.apps import check_loader_instance
 
 
 def test_django_vite_asset_loader_cannot_be_instantiated():
@@ -9,9 +10,56 @@ def test_django_vite_asset_loader_cannot_be_instantiated():
         DjangoViteAssetLoader()
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
-def test_check_loader_instance_happy():
-    warnings = DjangoViteAssetLoader.instance().check()
+@pytest.mark.parametrize(
+    "patch_settings",
+    [
+        {
+            "DJANGO_VITE_DEV_MODE": False,
+        },
+        {
+            "DJANGO_VITE_DEV_MODE": True,
+        },
+        {
+            "DJANGO_VITE_DEV_MODE": False,
+            "DJANGO_VITE_ASSETS_PATH": "/",
+        },
+        {
+            "DJANGO_VITE_DEV_MODE": True,
+            "DJANGO_VITE_ASSETS_PATH": "/",
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                }
+            }
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": True,
+                }
+            }
+        },
+        {
+            "DJANGO_VITE": {
+                "default": DjangoViteConfig(
+                    dev_mode=False,
+                )
+            }
+        },
+        {
+            "DJANGO_VITE": {
+                "default": DjangoViteConfig(
+                    dev_mode=True,
+                )
+            }
+        },
+    ],
+    indirect=True,
+)
+def test_check_loader_instance_happy(patch_settings):
+    warnings = check_loader_instance()
     assert len(warnings) == 0
 
 
@@ -34,7 +82,7 @@ def test_check_loader_instance_happy():
     indirect=True,
 )
 def test_check_loader_instance_warnings(patch_settings):
-    warnings = DjangoViteAssetLoader.instance().check()
+    warnings = check_loader_instance()
     assert len(warnings) == 1
     assert "Make sure you have generated a manifest file" in warnings[0].hint
 
@@ -66,3 +114,15 @@ def test_combined_settings(patch_settings):
         "You're mixing the new DJANGO_VITE setting with these legacy settings: "
         "[DJANGO_VITE_DEV_MODE, DJANGO_VITE_ASSETS_PATH]"
     ) in str(record[0].message)
+
+
+def test_parse_manifest_during_dev_mode(dev_mode_true):
+    default_app = DjangoViteAssetLoader.instance()._apps["default"]
+    manifest_client = default_app.manifest
+    assert manifest_client._parse_manifest() == manifest_client.ParsedManifestOutput()
+
+
+def test_parse_manifest_during_dev_mode(dev_mode_true):
+    default_app = DjangoViteAssetLoader.instance()._apps["default"]
+    manifest_client = default_app.manifest
+    assert manifest_client._parse_manifest() == manifest_client.ParsedManifestOutput()

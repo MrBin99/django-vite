@@ -4,7 +4,7 @@ from django.template import Context, Template
 from django_vite.core.exceptions import DjangoViteAssetNotFoundError
 
 
-@pytest.mark.usefixtures("patch_dev_mode_true")
+@pytest.mark.usefixtures("dev_mode_true")
 def test_vite_asset_url_returns_dev_url():
     template = Template(
         """
@@ -18,7 +18,7 @@ def test_vite_asset_url_returns_dev_url():
     assert script_tag["src"] == "http://localhost:3000/static/src/entry.ts"
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
+@pytest.mark.usefixtures("dev_mode_false")
 def test_vite_asset_url_returns_production_url():
     template = Template(
         """
@@ -32,7 +32,7 @@ def test_vite_asset_url_returns_production_url():
     assert script_tag["src"] == "assets/entry-29e38a60.js"
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
+@pytest.mark.usefixtures("dev_mode_false")
 def test_vite_asset_url_raises_nonexistent_entry():
     with pytest.raises(DjangoViteAssetNotFoundError):
         template = Template(

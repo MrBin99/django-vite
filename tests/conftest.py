@@ -73,7 +73,7 @@ def delete_settings(patch_settings):
         },
     ]
 )
-def patch_dev_mode_false(request, patch_settings):
+def dev_mode_false(request, patch_settings):
     """
     Run a test with dev_mode=False, parameterized to run under both versions of
     settings that we support.
@@ -95,7 +95,39 @@ def patch_dev_mode_false(request, patch_settings):
         },
     ]
 )
-def patch_dev_mode_true(request, patch_settings):
+def dev_mode_true(request, patch_settings):
+    """
+    Run a test with dev_mode=True, parameterized to run under both versions of
+    settings that we support.
+    """
+    return patch_settings(request.param)
+
+
+@pytest.fixture(
+    params=[
+        {
+            "DJANGO_VITE_DEV_MODE": True,
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": True,
+                }
+            }
+        },
+        {
+            "DJANGO_VITE_DEV_MODE": False,
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                }
+            }
+        },
+    ]
+)
+def dev_mode_all(request, patch_settings):
     """
     Run a test with dev_mode=True, parameterized to run under both versions of
     settings that we support.

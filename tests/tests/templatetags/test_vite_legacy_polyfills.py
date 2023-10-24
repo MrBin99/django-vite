@@ -4,7 +4,7 @@ from django.template import Context, Template
 from django_vite.core.exceptions import DjangoViteAssetNotFoundError
 
 
-@pytest.mark.usefixtures("patch_dev_mode_true")
+@pytest.mark.usefixtures("dev_mode_true")
 def test_vite_legacy_polyfills_returns_nothing_with_dev_mode_on():
     template = Template(
         """

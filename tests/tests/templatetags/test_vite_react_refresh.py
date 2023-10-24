@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from django.template import Context, Template
 
 
-@pytest.mark.usefixtures("patch_dev_mode_true")
+@pytest.mark.usefixtures("dev_mode_true")
 def test_vite_react_refresh_returns_script_tag():
     template = Template(
         """
@@ -64,8 +64,8 @@ def test_vite_react_refresh_uses_correct_settings(patch_settings):
     assert "https://127.0.0.2:5174/static/custom/prefix/foo/bar" in script_tag.text
 
 
-@pytest.mark.usefixtures("patch_dev_mode_false")
-def test_vite_react_refresh_returns_nothing_with_patch_dev_mode_false():
+@pytest.mark.usefixtures("dev_mode_false")
+def test_vite_react_refresh_returns_nothing_with_dev_mode_false():
     template = Template(
         """
         {% load django_vite %}
