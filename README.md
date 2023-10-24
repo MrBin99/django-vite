@@ -4,6 +4,33 @@
 
 Integration of [ViteJS](https://vitejs.dev/) in a Django project.
 
+- [Installation](#installation)
+  - [Django](#django)
+  - [ViteJS](#vitejs)
+  - [Assets](#assets)
+- [Usage](#usage)
+  - [Configuration](#configuration)
+  - [Dev Mode](#dev-mode)
+  - [Template tags](#template-tags)
+  - [Custom attributes](#custom-attributes)
+- [Vite Legacy Plugin](#vite-legacy-plugin)
+- [Multi-app configuration](#multi-app-configuration)
+- [Configuration Variables](#configuration-variables)
+  - [dev\_mode](#dev_mode)
+  - [dev\_server\_protocol](#dev_server_protocol)
+  - [dev\_server\_host](#dev_server_host)
+  - [dev\_server\_port](#dev_server_port)
+  - [static\_url\_prefix](#static_url_prefix)
+  - [manifest\_path](#manifest_path)
+  - [legacy\_polyfills\_motif](#legacy_polyfills_motif)
+  - [ws\_client\_url](#ws_client_url)
+  - [react\_refresh\_url](#react_refresh_url)
+- [Notes](#notes)
+  - [Whitenoise](#whitenoise)
+- [Examples](#examples)
+- [Thanks](#thanks)
+
+
 ## Installation
 
 ### Django
@@ -35,12 +62,16 @@ Then in your ViteJS config file :
 - Set the `build.manifest` options to `true`.
 - As you are in SSR and not in SPA, you don't have an `index.html` that
   ViteJS can use to determine which files to compile. You need to tell it
-  directly. In your ViteJS config file add the following :
+  directly in `build.rollupOptions.input`.
 
 ```javascript
 export default defineConfig({
+  ...
+  base: "/static/",
   build {
     ...
+    manifest: true,
+    outDir: resolve("./assets"),
     rollupOptions: {
       input: {
         <unique key>: '<path to your asset>'
@@ -63,26 +94,42 @@ import 'vite/modulepreload-polyfill';
 
 ### Configuration
 
-- Define a setting variable in your `settings.py` named `DJANGO_VITE_ASSETS_PATH`
-  containing the absolute path to where your assets are built.
+Define a default `DJANGO_VITE` configuration in your `settings.py`.
 
-  - This must correspond to your `build.outDir` in your ViteJS configuration.
-  - The `DJANGO_VITE_ASSETS_PATH` must be included in your `STATICFILES_DIRS`
-    Django setting.
+```python
+DJANGO_VITE = {
+  "default": {
+    "dev_mode": True,
+    "dev_server_port": 5173,
+  }
+}
+```
 
-- Define a setting variable in your `settings.py` named `DJANGO_VITE_DEV_MODE`
-  containing a boolean defining if you want to include assets in development
-  mode or production mode.
+Or if you prefer to use the legacy module-level settings, you can use:
 
-  - In development mode, assets are included as modules using the ViteJS
-    webserver. This will enable HMR for your assets.
-  - In production mode, assets are included as standard assets
-    (no ViteJS webserver and HMR) like default Django static files.
-    This means that your assets must be compiled with ViteJS before.
-  - This setting may be set as the same value as your `DEBUG` setting in
-    Django. But you can do what is good for your needs.
+```python
+DJANGO_VITE_DEV_MODE = True
+DJANGO_VITE_DEV_SERVER_PORT = 5173
+```
 
-Note : `DJANGO_VITE_ASSETS_PATH` supports `pathlib.Path` syntax or pure `str`.
+Be sure that the `build.outDir` from `vite.config.js` is included in `STATICFILES_DIRS`.
+
+```python
+STATICFILES_DIRS = [
+  BASE_DIR / "assets"
+]
+```
+
+### Dev Mode
+
+The `dev_mode`/`DJANGO_VITE_DEV_MODE` boolean defines if you want to include assets in development mode or production mode.
+- In development mode, assets are included as modules using the ViteJS
+  webserver. This will enable HMR for your assets.
+- In production mode, assets are included as standard assets
+  (no ViteJS webserver and HMR) like default Django static files.
+  This means that your assets must be compiled with ViteJS before.
+- This setting may be set as the same value as your `DEBUG` setting in
+  Django. But you can do what is good for your needs.
 
 ### Template tags
 
@@ -193,52 +240,133 @@ The path to your asset must contain de pattern `-legacy` in the file name (ex : 
 
 This tag accepts overriding and adding custom attributes like the default `vite_asset` tag.
 
-## Miscellaneous configuration
+## Multi-app configuration
 
-You can redefine those variables in your `settings.py` :
+If you would like to use django-vite with multiple vite configurations you can specify them in your settings.
 
-- `DJANGO_VITE_DEV_SERVER_PROTOCOL` : ViteJS webserver protocol
-  (default : `http`).
-- `DJANGO_VITE_DEV_SERVER_HOST` : ViteJS webserver hostname
-  (default : `localhost`).
-- `DJANGO_VITE_DEV_SERVER_PORT` : ViteJS webserver port
-  (default : `3000`)
-- `DJANGO_VITE_WS_CLIENT_URL` : ViteJS webserver path to the HMR client used
-  in the `vite_hmr_client` tag (default : `@vite/client`).
-- `DJANGO_VITE_MANIFEST_PATH` : Absolute path (including filename)
-  to your ViteJS manifest file. This file is generated in your
-  `DJANGO_VITE_ASSETS_PATH`. But if you are in production (`DEBUG` is false)
-  then it is in your `STATIC_ROOT` after you collected your
-  [static files](https://docs.djangoproject.com/en/3.1/howto/static-files/) (supports `pathlib.Path` or `str`).
-- `DJANGO_VITE_LEGACY_POLYFILLS_MOTIF` : The motif used to find the assets for polyfills inside the `manifest.json` (only if you use [@vitejs/plugin-legacy](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy)).
-- `DJANGO_VITE_STATIC_URL_PREFIX` : prefix directory of your static files built by Vite.
-  (default : `""`)
-
-  - Use it if you want to avoid conflicts with other static files in your project.
-  - It may be used with `STATICFILES_DIRS`.
-  - You also need to add this prefix inside vite config's `base`.
-    e.g.:
-
-  ```python
-  # settings.py
-  DJANGO_VITE_STATIC_URL_PREFIX = 'bundler'
-  STATICFILES_DIRS = (('bundler', '/srv/app/bundler/dist'),)
-  ```
-
-  ```javascript
-  // vite.config.js
-  export default defineConfig({
-    base: '/static/bundler/',
+```python
+DJANGO_VITE = {
+  "default": {
+    "dev_mode": True,
+    "dev_server_port": 5173
+  },
+  "external_app_1": {
     ...
-  })
-  ```
+  },
+  "external_app_2": {
+    ...
+  }
+}
+```
+
+Specify the app in each django-tag tag that you use in your templates. If no app is provided, it will default to using the "default" app.
+
+```html
+{% vite_asset '<path to your asset>' %}
+{% vite_asset '<path to another asset>' app="external_app_1" %}
+{% vite_asset '<path to a third asset>' app="external_app_2" %}
+```
+
+You can see an example project [here](https://github.com/Niicck/django-vite-multi-app-example).
+
+## Configuration Variables
+
+You can redefine these values for each app config in `DJANGO_VITE` in `settings.py`.
+
+### dev_mode
+- **Type**: `bool`
+- **Default**: `False`
+- **Legacy Key**: `DJANGO_VITE_DEV_MODE`
+
+Indicates whether to serve assets via the ViteJS development server or from compiled production assets.
+
+Read more: [Dev Mode](#dev-mode)
+
+### dev_server_protocol
+- **Type**: `str`
+- **Default**: `"http"`
+- **Legacy Key**: `DJANGO_VITE_DEV_SERVER_PROTOCOL`
+
+The protocol used by the ViteJS webserver.
+
+### dev_server_host
+- **Type**: `str`
+- **Default**: `"localhost"`
+- **Legacy Key**: `DJANGO_VITE_DEV_SERVER_HOST`
+
+The `server.host` in `vite.config.js` for the ViteJS development server.
+
+### dev_server_port
+- **Type**: `int`
+- **Default**: `3000`
+- **Legacy Key**: `DJANGO_VITE_DEV_SERVER_PORT`
+
+The `server.port` in `vite.config.js` for the ViteJS development server.
+
+### static_url_prefix
+- **Type**: `str`
+- **Default**: `""`
+- **Legacy Key**: `DJANGO_VITE_STATIC_URL_PREFIX`
+
+The directory prefix for static files built by ViteJS.
+
+- Use it if you want to avoid conflicts with other static files in your project.
+- It's used in both dev mode and production mode.
+- For dev mode, you also need to add this prefix inside vite config's `base`.
+- For production mode, you may need to add this to vite config's `build.outDir`.
+
+Example:
+
+```python
+# settings.py
+DJANGO_VITE_STATIC_URL_PREFIX = 'bundler'
+STATICFILES_DIRS = (('bundler', '/srv/app/bundler/dist'),)
+```
+
+```javascript
+// vite.config.js
+export default defineConfig({
+  base: '/static/bundler/',
+  ...
+})
+```
+
+### manifest_path
+- **Type**: `str | Path`
+- **Default**: `Path(settings.STATIC_ROOT) / static_url_prefix / "manifest.json"`
+- **Legacy Key**: `DJANGO_VITE_MANIFEST_PATH`
+
+The absolute path, including the filename, to the ViteJS manifest file located in `build.outDir`.
+
+### legacy_polyfills_motif
+- **Type**: `str`
+- **Default**: `"legacy-polyfills"`
+- **Legacy Key**: `DJANGO_VITE_LEGACY_POLYFILLS_MOTIF`
+
+The motif used to identify assets for polyfills in the `manifest.json`. This is only applicable if you are using [@vitejs/plugin-legacy](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy).
+
+### ws_client_url
+- **Type**: `str`
+- **Default**: `"@vite/client"`
+- **Legacy Key**: `DJANGO_VITE_WS_CLIENT_URL`
+
+The path to the HMR (Hot Module Replacement) client used in the `vite_hmr_client` tag.
+
+### react_refresh_url
+- **Type**: `str`
+- **Default**: `"@react-refresh""`
+- **Legacy Key**: `DJANGO_VITE_REACT_REFRESH_URL`
+
+If you're using React, this will generate the Javascript needed to support React HMR.
 
 ## Notes
 
 - In production mode, all generated path are prefixed with the `STATIC_URL`
   setting of Django.
 
-- If you are serving your static files with whitenoise, by default your files compiled by vite will not be considered immutable and a bad cache-control will be set. To fix this you will need to set a custom test like so:
+### Whitenoise
+
+If you are serving your static files with whitenoise, by default your files compiled by vite will not be considered immutable and a bad cache-control will be set. To fix this you will need to set a custom test like so:
 
 ```python
 import re
@@ -255,10 +383,11 @@ def immutable_file_test(path, url):
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 ```
 
-## Example
+## Examples
 
-If you are struggling on how to setup a project using Django / ViteJS and Django Vite,
-I've made an [example project here](https://github.com/MrBin99/django-vite-example).
+For an example of how to setup the project using the new multi-app configuration, please see this [multi-app example project](https://github.com/Niicck/django-vite-multi-app-example).
+
+For an example using the module-level legacy settings, please see this [example project here](https://github.com/MrBin99/django-vite-example).
 
 ## Thanks
 
