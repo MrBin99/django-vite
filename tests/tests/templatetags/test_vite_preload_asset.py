@@ -1,9 +1,10 @@
 import pytest
 from bs4 import BeautifulSoup
 from django.template import Context, Template
-from django_vite.exceptions import DjangoViteAssetNotFoundError
+from django_vite.core.exceptions import DjangoViteAssetNotFoundError
 
 
+@pytest.mark.usefixtures("dev_mode_true")
 def test_preload_vite_asset_returns_nothing_with_dev_mode_on():
     template = Template(
         """
@@ -16,7 +17,7 @@ def test_preload_vite_asset_returns_nothing_with_dev_mode_on():
     assert str(soup).strip() == ""
 
 
-@pytest.mark.usefixtures("dev_mode_off")
+@pytest.mark.usefixtures("dev_mode_false")
 def test_preload_vite_asset_returns_production_tags():
     template = Template(
         """
@@ -33,7 +34,7 @@ def test_preload_vite_asset_returns_production_tags():
     assert first_link["rel"] == ["modulepreload"]
 
 
-@pytest.mark.usefixtures("dev_mode_off")
+@pytest.mark.usefixtures("dev_mode_false")
 def test_vite_preload_asset_raises_nonexistent_entry():
     with pytest.raises(DjangoViteAssetNotFoundError):
         template = Template(

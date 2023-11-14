@@ -8,6 +8,7 @@ addopts = '''
   --cov-report term-missing
   --cov-branch
 '''
+filterwarnings = "ignore::DeprecationWarning:django_vite.*"
 
 [tool.black]
 line-length = 88

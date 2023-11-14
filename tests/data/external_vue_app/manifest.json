@@ -1,0 +1,14 @@
+{
+  "src/entry.js": {
+    "css": [
+      "assets/entry-0ed1a6fd.css"
+    ],
+    "file": "assets/entry-5c085aac.js",
+    "isEntry": true,
+    "src": "entry.js"
+  },
+  "src/entry.css": {
+    "file": "assets/entry-0ed1a6fd.css",
+    "src": "entry.css"
+  }
+}
