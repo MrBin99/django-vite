@@ -99,8 +99,7 @@ Define a default `DJANGO_VITE` configuration in your `settings.py`.
 ```python
 DJANGO_VITE = {
   "default": {
-    "dev_mode": True,
-    "dev_server_port": 5173,
+    "dev_mode": True
   }
 }
 ```
@@ -109,7 +108,6 @@ Or if you prefer to use the legacy module-level settings, you can use:
 
 ```python
 DJANGO_VITE_DEV_MODE = True
-DJANGO_VITE_DEV_SERVER_PORT = 5173
 ```
 
 Be sure that the `build.outDir` from `vite.config.js` is included in `STATICFILES_DIRS`.
@@ -189,7 +187,7 @@ If you're using React, this will generate the Javascript needed to support React
 
 ### Custom attributes
 
-By default, all scripts tags are generated with a `type="module"` and `crossorigin=""` attributes just like ViteJS do by default if you are building a single-page app.
+By default, all script tags are generated with a `type="module"` and `crossorigin=""` attributes just like ViteJS do by default if you are building a single-page app.
 You can override this behavior by adding or overriding this attributes like so :
 
 ```
@@ -248,7 +246,6 @@ If you would like to use django-vite with multiple vite configurations you can s
 DJANGO_VITE = {
   "default": {
     "dev_mode": True,
-    "dev_server_port": 5173
   },
   "external_app_1": {
     ...
@@ -298,7 +295,7 @@ The `server.host` in `vite.config.js` for the ViteJS development server.
 
 ### dev_server_port
 - **Type**: `int`
-- **Default**: `3000`
+- **Default**: `5173`
 - **Legacy Key**: `DJANGO_VITE_DEV_SERVER_PORT`
 
 The `server.port` in `vite.config.js` for the ViteJS development server.
@@ -361,7 +358,7 @@ If you're using React, this will generate the Javascript needed to support React
 
 ## Notes
 
-- In production mode, all generated path are prefixed with the `STATIC_URL`
+- In production mode, all generated paths are prefixed with the `STATIC_URL`
   setting of Django.
 
 ### Whitenoise

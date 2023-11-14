@@ -33,7 +33,7 @@ class DjangoViteConfig(NamedTuple):
     dev_server_host: str = "localhost"
 
     # Default Vite server port.
-    dev_server_port: int = 3000
+    dev_server_port: int = 5173
 
     # Prefix for STATIC_URL.
     static_url_prefix: str = ""
