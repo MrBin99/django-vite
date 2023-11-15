@@ -27,7 +27,7 @@ def test_vite_asset_returns_dev_tags(as_default):
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
-    assert script_tag["src"] == "http://localhost:3000/static/src/entry.ts"
+    assert script_tag["src"] == "http://localhost:5173/static/src/entry.ts"
     assert script_tag["type"] == "module"
 
 
@@ -121,7 +121,7 @@ def test_vite_asset_dev_prefix(patch_settings):
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
     assert (
-        script_tag["src"] == "http://localhost:3000/static/custom/prefix/src/entry.ts"
+        script_tag["src"] == "http://localhost:5173/static/custom/prefix/src/entry.ts"
     )
     assert script_tag["type"] == "module"
 

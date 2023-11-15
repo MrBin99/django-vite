@@ -15,7 +15,7 @@ def test_vite_asset_url_returns_dev_url():
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
-    assert script_tag["src"] == "http://localhost:3000/static/src/entry.ts"
+    assert script_tag["src"] == "http://localhost:5173/static/src/entry.ts"
 
 
 @pytest.mark.usefixtures("dev_mode_false")

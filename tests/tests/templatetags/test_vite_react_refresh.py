@@ -18,7 +18,7 @@ def test_vite_react_refresh_returns_script_tag():
     assert script_tag.has_attr("type")
     assert script_tag["type"] == "module"
     assert "__vite_plugin_react_preamble_installed__" in script_tag.text
-    assert "http://localhost:3000/static/@react-refresh" in script_tag.text
+    assert "http://localhost:5173/static/@react-refresh" in script_tag.text
 
 
 @pytest.mark.parametrize(
@@ -105,4 +105,4 @@ def test_vite_react_refresh_url_setting(patch_settings):
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.script
-    assert "http://localhost:3000/static/foobar" in script_tag.text
+    assert "http://localhost:5173/static/foobar" in script_tag.text

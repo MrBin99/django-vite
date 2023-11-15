@@ -14,7 +14,7 @@ def test_vite_hmr_client_returns_script_tag():
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
-    assert script_tag["src"] == "http://localhost:3000/static/@vite/client"
+    assert script_tag["src"] == "http://localhost:5173/static/@vite/client"
     assert script_tag["type"] == "module"
 
 
