@@ -68,7 +68,7 @@ Then in your ViteJS config file :
 export default defineConfig({
   ...
   base: "/static/",
-  build {
+  build: {
     ...
     manifest: true,
     outDir: resolve("./assets"),
@@ -78,7 +78,7 @@ export default defineConfig({
       }
     }
   }
-}
+})
 ```
 
 ### Assets
