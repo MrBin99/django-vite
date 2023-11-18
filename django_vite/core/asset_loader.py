@@ -59,8 +59,10 @@ class ManifestEntry(NamedTuple):
     file: str
     src: Optional[str] = None
     isEntry: Optional[bool] = False
+    isDynamicEntry: Optional[bool] = False
     css: Optional[List[str]] = []
     imports: Optional[List[str]] = []
+    dynamicImports: Optional[List[str]] = []
 
 
 class ManifestClient:
@@ -166,7 +168,12 @@ class ManifestClient:
                 manifest_json = json.loads(manifest_content)
 
                 for path, manifest_entry_data in manifest_json.items():
-                    manifest_entry = ManifestEntry(**manifest_entry_data)
+                    filtered_manifest_entry_data = {
+                        key: value
+                        for key, value in manifest_entry_data.items()
+                        if key in ManifestEntry._fields
+                    }
+                    manifest_entry = ManifestEntry(**filtered_manifest_entry_data)
                     entries[path] = manifest_entry
                     if self.legacy_polyfills_motif in path:
                         legacy_polyfills_entry = manifest_entry

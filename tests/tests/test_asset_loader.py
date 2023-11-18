@@ -126,3 +126,25 @@ def test_parse_manifest_during_dev_mode(dev_mode_true):
     default_app = DjangoViteAssetLoader.instance()._apps["default"]
     manifest_client = default_app.manifest
     assert manifest_client._parse_manifest() == manifest_client.ParsedManifestOutput()
+
+
+@pytest.mark.parametrize(
+    "patch_settings",
+    [
+        {
+            "DJANGO_VITE_DEV_MODE": False,
+            "DJANGO_VITE_MANIFEST_PATH": "dynamic-entry-manifest.json",
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                    "manifest_path": "dynamic-entry-manifest.json",
+                }
+            }
+        },
+    ],
+)
+def test_load_dynamic_import_manifest(patch_settings):
+    warnings = check_loader_instance()
+    assert len(warnings) == 0
