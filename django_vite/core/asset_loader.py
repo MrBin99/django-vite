@@ -449,23 +449,22 @@ class DjangoViteAppClient:
             tags -- List of CSS tags.
             already_processed -- List of already processed css paths
         """
-        already_processed = already_processed or []
+        if already_processed is None:
+            already_processed = []
         tags: List[Tag] = []
         manifest_entry = self.manifest.get(path)
 
         for import_path in manifest_entry.imports:
-            new_tags, new_already_processed = self._generate_css_files_of_asset(
+            new_tags, _ = self._generate_css_files_of_asset(
                 import_path, already_processed, tag_generator
             )
             tags.extend(new_tags)
-            already_processed.extend(new_already_processed)
 
         for css_path in manifest_entry.css:
             if css_path not in already_processed:
                 url = self._get_production_server_url(css_path)
                 tags.append(tag_generator(url))
-
-            already_processed.append(css_path)
+                already_processed.append(css_path)
 
         return self.GeneratedCssFilesOutput(tags, already_processed)
 
