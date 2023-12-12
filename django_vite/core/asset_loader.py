@@ -100,7 +100,7 @@ class ManifestClient:
         """
         Get the manifest_path from the config.
         If it wasn't provided, set the default location to
-        STATIC_ROOT / static_url_prefix / "manifest.json".
+        STATIC_ROOT / static_url_prefix / ".vite" / "manifest.json".
 
         Returns:
             Path -- the path to the vite config's manifest.json
@@ -110,6 +110,7 @@ class ManifestClient:
             return (
                 Path(settings.STATIC_ROOT)
                 / self._config.static_url_prefix
+                / ".vite"
                 / "manifest.json"
             )
         elif not isinstance(initial_manifest_path, Path):

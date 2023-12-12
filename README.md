@@ -330,7 +330,7 @@ export default defineConfig({
 
 ### manifest_path
 - **Type**: `str | Path`
-- **Default**: `Path(settings.STATIC_ROOT) / static_url_prefix / "manifest.json"`
+- **Default**: `Path(settings.STATIC_ROOT) / static_url_prefix / ".vite" / "manifest.json"`
 - **Legacy Key**: `DJANGO_VITE_MANIFEST_PATH`
 
 The absolute path, including the filename, to the ViteJS manifest file located in `build.outDir`.
