@@ -59,7 +59,7 @@ Then in your ViteJS config file :
 
 - Set the `base` options the same as your `STATIC_URL` Django setting.
 - Set the `build.outDir` path to where you want the assets to compiled.
-- Set the `build.manifest` options to `true`.
+- Set the `build.manifest` options to `manifest.json`.
 - As you are in SSR and not in SPA, you don't have an `index.html` that
   ViteJS can use to determine which files to compile. You need to tell it
   directly in `build.rollupOptions.input`.
@@ -70,7 +70,7 @@ export default defineConfig({
   base: "/static/",
   build: {
     ...
-    manifest: true,
+    manifest: "manifest.json",
     outDir: resolve("./assets"),
     rollupOptions: {
       input: {
