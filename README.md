@@ -382,9 +382,9 @@ WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 
 ## Examples
 
-For an example of how to setup the project using the new multi-app configuration, please see this [multi-app example project](https://github.com/Niicck/django-vite-multi-app-example).
+For examples of how to setup the project in v3, please see [django-vite-examples](https://github.com/Niicck/django-vite-examples).
 
-For an example using the module-level legacy settings, please see this [example project here](https://github.com/MrBin99/django-vite-example).
+For another example that uses the module-level legacy settings, please see this [example project here](https://github.com/MrBin99/django-vite-example).
 
 ## Thanks
 
