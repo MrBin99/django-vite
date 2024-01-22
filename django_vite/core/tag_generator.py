@@ -3,6 +3,15 @@ from typing import Dict
 Tag = str
 
 
+def attrs_to_str(attrs: Dict[str, str]):
+    """
+    Convert dictionary of attributes into a string that can be injected into a <script/>
+    tag.
+    """
+    attrs_str = " ".join([f'{key}="{value}"' for key, value in attrs.items()])
+    return attrs_str
+
+
 class TagGenerator:
     @staticmethod
     def script(src: str, attrs: Dict[str, str]) -> Tag:
@@ -20,7 +29,7 @@ class TagGenerator:
             str -- The script tag.
         """
 
-        attrs_str = " ".join([f'{key}="{value}"' for key, value in attrs.items()])
+        attrs_str = attrs_to_str(attrs)
 
         return f'<script {attrs_str} src="{src}"></script>'
 
@@ -54,6 +63,6 @@ class TagGenerator:
 
     @staticmethod
     def preload(href: str, attrs: Dict[str, str]) -> Tag:
-        attrs_str = " ".join([f'{key}="{value}"' for key, value in attrs.items()])
+        attrs_str = attrs_to_str(attrs)
 
         return f'<link href="{href}" {attrs_str} />'

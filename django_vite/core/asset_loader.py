@@ -13,7 +13,7 @@ from django_vite.core.exceptions import (
     DjangoViteAssetNotFoundError,
     DjangoViteConfigNotFoundError,
 )
-from django_vite.core.tag_generator import Tag, TagGenerator
+from django_vite.core.tag_generator import Tag, TagGenerator, attrs_to_str
 
 DEFAULT_APP_NAME = "default"
 
@@ -590,11 +590,15 @@ class DjangoViteAppClient:
             attrs={"type": "module", **kwargs},
         )
 
-    def generate_vite_react_refresh_url(self) -> str:
+    def generate_vite_react_refresh_url(self, **kwargs: Dict[str, str]) -> str:
         """
         Generates the script for the Vite React Refresh for HMR.
         Only used in development, in production this method returns
         an empty string.
+
+        Keyword Arguments:
+            **kwargs {Dict[str, str]} -- Adds new attributes to generated
+                script tags.
 
         Returns:
             str -- The script or an empty string.
@@ -605,8 +609,9 @@ class DjangoViteAppClient:
             return ""
 
         url = self._get_dev_server_url(self.react_refresh_url)
+        attrs_str = attrs_to_str(kwargs)
 
-        return f"""<script type="module">
+        return f"""<script type="module" {attrs_str}>
             import RefreshRuntime from '{url}'
             RefreshRuntime.injectIntoGlobalHook(window)
             window.$RefreshReg$ = () => {{}}
@@ -818,6 +823,7 @@ class DjangoViteAssetLoader:
     def generate_vite_react_refresh_url(
         self,
         app: str = DEFAULT_APP_NAME,
+        **kwargs: Dict[str, str],
     ) -> str:
         app_client = self._get_app_client(app)
-        return app_client.generate_vite_react_refresh_url()
+        return app_client.generate_vite_react_refresh_url(**kwargs)
