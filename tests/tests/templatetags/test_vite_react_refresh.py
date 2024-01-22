@@ -106,3 +106,35 @@ def test_vite_react_refresh_url_setting(patch_settings):
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.script
     assert "http://localhost:5173/static/foobar" in script_tag.text
+
+
+@pytest.mark.parametrize(
+    "patch_settings",
+    [
+        {
+            "DJANGO_VITE_DEV_MODE": True,
+            "DJANGO_VITE_REACT_REFRESH_URL": "foobar",
+        },
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": True,
+                    "react_refresh_url": "foobar",
+                }
+            }
+        },
+    ],
+    indirect=True,
+)
+def test_vite_react_refresh_uses_kwargs(patch_settings):
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_react_refresh nonce="woo-nonce" %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.script
+    assert script_tag.has_attr("nonce")
+    assert script_tag["nonce"] == "woo-nonce"

@@ -183,7 +183,13 @@ like the previous tag.**
 ```
 {% vite_react_refresh %}
 ```
-If you're using React, this will generate the Javascript needed to support React HMR.
+If you're using React, this will generate the Javascript `<script/>` needed to support React HMR.
+
+```
+{% vite_react_refresh nonce="{{ request.csp_nonce }}" %}
+```
+
+Any kwargs passed to vite_react_refresh will be added to its generated `<script/>` tag. For example, if your site is configured with a Content Security Policy using [django-csp](https://github.com/mozilla/django-csp) you'll want to add this value for `nonce`.
 
 ### Custom attributes
 

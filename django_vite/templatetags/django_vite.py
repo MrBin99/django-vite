@@ -178,13 +178,22 @@ def vite_legacy_asset(
 
 @register.simple_tag
 @mark_safe
-def vite_react_refresh(app: str = DEFAULT_APP_NAME) -> str:
+def vite_react_refresh(
+    app: str = DEFAULT_APP_NAME,
+    **kwargs: Dict[str, str],
+) -> str:
     """
     Generates the script for the Vite React Refresh for HMR.
     Only used in development, in production this method returns
     an empty string.
 
+    Keyword Arguments:
+        **kwargs {Dict[str, str]} -- Adds new attributes to generated
+            script tags.
+
     Returns:
         str -- The script or an empty string.
     """
-    return DjangoViteAssetLoader.instance().generate_vite_react_refresh_url(app)
+    return DjangoViteAssetLoader.instance().generate_vite_react_refresh_url(
+        app, **kwargs
+    )
