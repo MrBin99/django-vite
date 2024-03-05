@@ -24,6 +24,8 @@ setup(
     ],
     install_requires=[
         "Django>=3.2",
+        "requests>=2.31.0",
+        "urllib3>=1.26.18",
     ],
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
