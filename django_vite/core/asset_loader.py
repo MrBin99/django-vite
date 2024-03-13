@@ -302,6 +302,10 @@ class DjangoViteAppClient:
                 this asset in your page.
         """
 
+        json_encoded_attributes = kwargs.pop("json_encoded_attributes", "{}")
+        json_encoded_attributes = json.loads(json_encoded_attributes)
+        kwargs.update(json_encoded_attributes)
+
         if self.dev_mode:
             url = self._get_dev_server_url(path)
             return TagGenerator.script(

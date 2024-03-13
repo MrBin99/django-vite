@@ -1,4 +1,6 @@
 import pytest
+from django.utils.safestring import SafeString
+import json
 from bs4 import BeautifulSoup
 from django.template import Context, Template, TemplateSyntaxError
 from django_vite.core.exceptions import (
@@ -206,6 +208,26 @@ def test_vite_asset_override_default_attribute():
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
     assert script_tag["crossorigin"] == "anonymous"
+
+
+@pytest.mark.usefixtures("dev_mode_all")
+def test_vite_asset_kebab_attribute():
+    additional_attributes = {
+        "data-item-track": "reload",
+        "data-other": "3",
+    }
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset "src/entry.ts" json_encoded_attributes=json_encoded_attributes %}
+    """)
+    html = template.render(Context({
+        "json_encoded_attributes": SafeString(json.dumps(additional_attributes))
+    }))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.find("script")
+    assert script_tag["data-item-track"] == "reload"
+    assert script_tag["data-other"] == "3"
 
 
 def test_vite_asset_custom_attributes(dev_mode_all):
