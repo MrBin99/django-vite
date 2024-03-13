@@ -220,10 +220,13 @@ def test_vite_asset_kebab_attribute():
         """
         {% load django_vite %}
         {% vite_asset "src/entry.ts" json_encoded_attributes=json_encoded_attributes %}
-    """)
-    html = template.render(Context({
-        "json_encoded_attributes": SafeString(json.dumps(additional_attributes))
-    }))
+    """
+    )
+    html = template.render(
+        Context(
+            {"json_encoded_attributes": SafeString(json.dumps(additional_attributes))}
+        )
+    )
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
     assert script_tag["data-item-track"] == "reload"
