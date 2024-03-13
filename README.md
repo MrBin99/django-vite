@@ -216,6 +216,24 @@ If you want to overrides default attributes just add them like new attributes :
 
 Although it's recommended to keep the default `type="module"` attribute as ViteJS build scripts as ES6 modules.
 
+You can also set attributes that require `kebab-casing` by padding `json_encoded_attributes`.
+
+```python
+from django.utils.safestring import SafeString
+
+def your_view(request):
+  json_encoded_attributes = json.dumps({
+    "some-item": "3",
+    "some-other-item": "value",
+  })
+
+  render(request, template, context={ "json_encoded_attributes": SafeString(json_encoded_attributes) })
+```
+
+```html
+{% vite_asset '<path to your asset>' json_encoded_attributes=json_encoded_attributes %}
+```
+
 ## Vite Legacy Plugin
 
 If you want to consider legacy browsers that don't support ES6 modules loading
