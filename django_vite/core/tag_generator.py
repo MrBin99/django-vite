@@ -8,7 +8,9 @@ def attrs_to_str(attrs: Dict[str, str]):
     Convert dictionary of attributes into a string that can be injected into a <script/>
     tag.
     """
-    attrs_str = " ".join([f'{key}="{value}"' for key, value in attrs.items()])
+    attrs_str = " ".join(
+        [f'{key.replace("_", "-")}="{value}"' for key, value in attrs.items()]
+    )
     return attrs_str
 
 

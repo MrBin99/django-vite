@@ -196,11 +196,11 @@ Any kwargs passed to vite_react_refresh will be added to its generated `<script/
 By default, all script tags are generated with a `type="module"` and `crossorigin=""` attributes just like ViteJS do by default if you are building a single-page app.
 You can override this behavior by adding or overriding this attributes like so :
 
-```
-{% vite_asset '<path to your asset>' foo="bar" hello="world" %}
+```jinja-html
+{% vite_asset '<path to your asset>' foo="bar" hello="world" data_turbo_track="reload" %}
 ```
 
-This line will add `foo="bar"` and `hello="world"` attributes.
+This line will add `foo="bar"`, `hello="world"`, and `data-turbo-track="reload"` attributes.
 
 You can also use context variables to fill attributes values :
 
@@ -215,24 +215,6 @@ If you want to overrides default attributes just add them like new attributes :
 ```
 
 Although it's recommended to keep the default `type="module"` attribute as ViteJS build scripts as ES6 modules.
-
-You can also set attributes that require `kebab-casing` by padding `json_encoded_attributes`.
-
-```python
-from django.utils.safestring import SafeString
-
-def your_view(request):
-  json_encoded_attributes = json.dumps({
-    "some-item": "3",
-    "some-other-item": "value",
-  })
-
-  render(request, template, context={ "json_encoded_attributes": SafeString(json_encoded_attributes) })
-```
-
-```html
-{% vite_asset '<path to your asset>' json_encoded_attributes=json_encoded_attributes %}
-```
 
 ## Vite Legacy Plugin
 
