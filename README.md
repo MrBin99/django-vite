@@ -196,11 +196,11 @@ Any kwargs passed to vite_react_refresh will be added to its generated `<script/
 By default, all script tags are generated with a `type="module"` and `crossorigin=""` attributes just like ViteJS do by default if you are building a single-page app.
 You can override this behavior by adding or overriding this attributes like so :
 
-```
-{% vite_asset '<path to your asset>' foo="bar" hello="world" %}
+```jinja-html
+{% vite_asset '<path to your asset>' foo="bar" hello="world" data_turbo_track="reload" %}
 ```
 
-This line will add `foo="bar"` and `hello="world"` attributes.
+This line will add `foo="bar"`, `hello="world"`, and `data-turbo-track="reload"` attributes.
 
 You can also use context variables to fill attributes values :
 

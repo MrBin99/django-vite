@@ -301,7 +301,6 @@ class DjangoViteAppClient:
             str -- The <script> tag and all <link> tags to import
                 this asset in your page.
         """
-
         if self.dev_mode:
             url = self._get_dev_server_url(path)
             return TagGenerator.script(

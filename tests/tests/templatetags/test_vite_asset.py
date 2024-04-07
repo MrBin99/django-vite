@@ -208,6 +208,21 @@ def test_vite_asset_override_default_attribute():
     assert script_tag["crossorigin"] == "anonymous"
 
 
+@pytest.mark.usefixtures("dev_mode_all")
+def test_vite_asset_kebab_attribute():
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset "src/entry.ts" data_item_track="reload" data_other="3" %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.find("script")
+    assert script_tag["data-item-track"] == "reload"
+    assert script_tag["data-other"] == "3"
+
+
 def test_vite_asset_custom_attributes(dev_mode_all):
     template = Template(
         """
