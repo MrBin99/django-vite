@@ -155,8 +155,7 @@ Then add this tag (in your `<head>` element too) to load your scripts :
 
 This will add a `<script>` tag including your JS/TS script :
 
-- In development mode, all scripts are included as modules.
-- In development mode, all scripts are marked as `async` and `defer`.
+- In development and production, all scripts are included as modules (`[type=module]`).
 - You can pass a second argument to this tag to overrides attributes
   passed to the script tag.
 - This tag only accept JS/TS, for other type of assets, they must be
