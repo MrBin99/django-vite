@@ -13,6 +13,7 @@ Integration of [ViteJS](https://vitejs.dev/) in a Django project.
   - [Dev Mode](#dev-mode)
   - [Template tags](#template-tags)
   - [Custom attributes](#custom-attributes)
+  - [Jinja2 template backend](#jinja2-template-backend)
 - [Vite Legacy Plugin](#vite-legacy-plugin)
 - [Multi-app configuration](#multi-app-configuration)
 - [Configuration Variables](#configuration-variables)
@@ -214,6 +215,49 @@ If you want to overrides default attributes just add them like new attributes :
 ```
 
 Although it's recommended to keep the default `type="module"` attribute as ViteJS build scripts as ES6 modules.
+
+### Jinja2 template backend
+
+If you are using Django with the Jinja2 template backend then alternative versions of the templatetags are provided, via an Extension.
+
+If you are using [`django-jinja` library](https://niwi.nz/django-jinja/latest/#_add_additional_extensions) then you can:
+
+```python
+from django_jinja.builtins import DEFAULT_EXTENSIONS
+
+"OPTIONS": {
+    "extensions": DEFAULT_EXTENSIONS + [
+        # Your extensions here...
+        "django_vite.templatetags.jinja.DjangoViteExtension"
+    ]
+}
+```
+
+Or for a [vanilla Django + Jinja2 setup](https://docs.djangoproject.com/fr/4.2/topics/templates/#django.template.backends.jinja2.Jinja2) you can do something like:
+
+```python
+from django.templatetags.static import static
+from django.urls import reverse
+
+from jinja2 import Environment
+from django_vite.templatetags.jinja import DjangoViteExtension
+
+
+def environment(**options):
+    options.setdefault("extensions", []).append(DjangoViteExtension)
+    env = Environment(**options)
+    return env
+```
+
+Then usage in your templates is similar, but adjusted as is normal for Jinja2 rather than Django template language.
+
+- Omit the `{% load django_vite %}` which is not needed.
+- Replace tag syntax with function calls, e.g.
+  - `{% vite_react_refresh %}` becomes:
+    `{{ vite_react_refresh() }}`
+  - `{% vite_asset '<path to your asset>' foo="bar" %}` becomes:
+    `{{ vite_asset('<path to your asset>', foo="bar") }}`
+    etc
 
 ## Vite Legacy Plugin
 

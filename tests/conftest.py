@@ -1,7 +1,10 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 import pytest
+from jinja2 import Environment
 
 from django_vite.core.asset_loader import DjangoViteAssetLoader
+from django_vite.templatetags.jinja import DjangoViteExtension
 
 __PYTEST_EMPTY__ = "__PYTEST_EMPTY__"
 __PYTEST_DELETE__ = "__PYTEST_DELETE__"
@@ -133,3 +136,9 @@ def dev_mode_all(request, patch_settings):
     settings that we support.
     """
     return patch_settings(request.param)
+
+
+@pytest.fixture()
+def jinja_env():
+    env = Environment(extensions=[DjangoViteExtension], autoescape=True)
+    return env
