@@ -13,6 +13,7 @@ Integration of [ViteJS](https://vitejs.dev/) in a Django project.
   - [Dev Mode](#dev-mode)
   - [Template tags](#template-tags)
   - [Custom attributes](#custom-attributes)
+  - [Jinja2 template backend](#jinja2-template-backend)
 - [Vite Legacy Plugin](#vite-legacy-plugin)
 - [Multi-app configuration](#multi-app-configuration)
 - [Configuration Variables](#configuration-variables)
