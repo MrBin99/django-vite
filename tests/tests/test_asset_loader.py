@@ -1,7 +1,9 @@
 import pytest
 
-from django_vite.core.asset_loader import DjangoViteConfig, ManifestClient
-from django_vite.templatetags.django_vite import DjangoViteAssetLoader
+from django_vite.core.asset_loader import (
+    DjangoViteConfig,
+    DjangoViteAssetLoader,
+)
 from django_vite.apps import check_loader_instance
 
 
