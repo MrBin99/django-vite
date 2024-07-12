@@ -1,5 +1,7 @@
 import pytest
 from bs4 import BeautifulSoup
+from pathlib import Path
+from django.conf import settings
 from django.template import Context, Template, TemplateSyntaxError
 from django_vite.core.exceptions import (
     DjangoViteAssetNotFoundError,
@@ -299,3 +301,29 @@ def test_vite_asset_external_app_production(external_vue_app):
     soup = BeautifulSoup(html, "html.parser")
     script_tag = soup.find("script")
     assert script_tag["src"] == "custom/prefix/assets/entry-5c085aac.js"
+
+
+@pytest.mark.parametrize(
+    "patch_settings",
+    [
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                    "manifest_path": Path(settings.STATIC_ROOT) / "recursion.json",
+                }
+            }
+        },
+    ],
+    indirect=True,
+)
+def test_recursion(patch_settings):
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_asset 'src/index.jsx' %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    assert True
