@@ -310,14 +310,18 @@ def test_vite_asset_external_app_production(external_vue_app):
             "DJANGO_VITE": {
                 "default": {
                     "dev_mode": False,
-                    "manifest_path": Path(settings.STATIC_ROOT) / "recursion.json",
+                    "manifest_path": Path(settings.STATIC_ROOT)
+                    / "circular-imports.json",
                 }
             }
         },
     ],
     indirect=True,
 )
-def test_recursion(patch_settings):
+def test_circular_js_imports(patch_settings):
+    """
+    Circular JS imports in a manifest should not cause an infinite recursion error.
+    """
     template = Template(
         """
         {% load django_vite %}
@@ -325,5 +329,4 @@ def test_recursion(patch_settings):
     """
     )
     html = template.render(Context({}))
-    soup = BeautifulSoup(html, "html.parser")
-    assert True
+    assert html
