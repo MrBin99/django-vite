@@ -47,7 +47,7 @@ class TagGenerator:
             str -- CSS link tag.
         """
 
-        attrs_str = attrs_to_str(attrs)
+        attrs_str = attrs_to_str(attrs if attrs else {})
 
         return f'<link {attrs_str} rel="stylesheet" href="{href}" />'
 
@@ -63,7 +63,7 @@ class TagGenerator:
             str -- CSS link tag.
         """
 
-        attrs_str = attrs_to_str(attrs)
+        attrs_str = attrs_to_str(attrs if attrs else {})
 
         return f'<link {attrs_str} rel="preload" href="{href}" as="style" />'
 
