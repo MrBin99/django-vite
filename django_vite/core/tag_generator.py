@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 Tag = str
 
@@ -36,7 +36,7 @@ class TagGenerator:
         return f'<script {attrs_str} src="{src}"></script>'
 
     @staticmethod
-    def stylesheet(href: str) -> Tag:
+    def stylesheet(href: str, attrs: Optional[Dict[str, str]] = None) -> Tag:
         """
         Generates an HTML <link> stylesheet tag for CSS.
 
@@ -47,10 +47,12 @@ class TagGenerator:
             str -- CSS link tag.
         """
 
-        return f'<link rel="stylesheet" href="{href}" />'
+        attrs_str = attrs_to_str(attrs)
+
+        return f'<link {attrs_str} rel="stylesheet" href="{href}" />'
 
     @staticmethod
-    def stylesheet_preload(href: str) -> Tag:
+    def stylesheet_preload(href: str, attrs: Optional[Dict[str, str]] = None) -> Tag:
         """
         Generates an HTML <link> preload tag for CSS.
 
@@ -61,7 +63,9 @@ class TagGenerator:
             str -- CSS link tag.
         """
 
-        return f'<link rel="preload" href="{href}" as="style" />'
+        attrs_str = attrs_to_str(attrs)
+
+        return f'<link {attrs_str} rel="preload" href="{href}" as="style" />'
 
     @staticmethod
     def preload(href: str, attrs: Dict[str, str]) -> Tag:

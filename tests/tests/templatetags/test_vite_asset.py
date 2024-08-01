@@ -218,9 +218,14 @@ def test_vite_asset_kebab_attribute():
     )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
-    script_tag = soup.find("script")
-    assert script_tag["data-item-track"] == "reload"
-    assert script_tag["data-other"] == "3"
+
+    for script_tag in soup.find_all("script"):
+        assert script_tag["data-item-track"] == "reload"
+        assert script_tag["data-other"] == "3"
+
+    for link in soup.find_all("link"):
+        assert link["data-item-track"] == "reload"
+        assert link["data-other"] == "3"
 
 
 def test_vite_asset_custom_attributes(dev_mode_all):
