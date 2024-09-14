@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Callable, NamedTuple, Optional, Union
+from typing import Dict, List, Callable, NamedTuple, Optional, Union, Set
 from urllib.parse import urljoin
 import warnings
 
@@ -427,13 +427,16 @@ class DjangoViteAppClient:
     class GeneratedCssFilesOutput(NamedTuple):
         # list of generated CSS tags
         tags: List[Tag]
-        # list of already processed CSS tags
-        already_processed: List[str]
+        # set of already processed js imports
+        already_processed_js: Set[str]
+        # set of already processed CSS tags
+        already_processed_css: Set[str]
 
     def _generate_css_files_of_asset(
         self,
         path: str,
-        already_processed: Optional[List[str]] = None,
+        already_processed_js: Optional[Set[str]] = None,
+        already_processed_css: Optional[Set[str]] = None,
         tag_generator: Callable[[str], Tag] = TagGenerator.stylesheet,
     ) -> GeneratedCssFilesOutput:
         """
@@ -448,24 +451,38 @@ class DjangoViteAppClient:
             tags -- List of CSS tags.
             already_processed -- List of already processed css paths
         """
-        if already_processed is None:
-            already_processed = []
+        if already_processed_css is None:
+            already_processed_css = set()
+        if already_processed_js is None:
+            already_processed_js = set()
         tags: List[Tag] = []
         manifest_entry = self.manifest.get(path)
 
         for import_path in manifest_entry.imports:
-            new_tags, _ = self._generate_css_files_of_asset(
-                import_path, already_processed, tag_generator
+            if import_path in already_processed_js:
+                continue
+            already_processed_js.add(import_path)
+            (
+                new_tags,
+                new_already_processed_js,
+                new_already_processed_css,
+            ) = self._generate_css_files_of_asset(
+                import_path, already_processed_js, already_processed_css, tag_generator
             )
+            already_processed_js.update(new_already_processed_js)
+            already_processed_css.update(new_already_processed_css)
             tags.extend(new_tags)
 
         for css_path in manifest_entry.css:
-            if css_path not in already_processed:
-                url = self._get_production_server_url(css_path)
-                tags.append(tag_generator(url))
-                already_processed.append(css_path)
+            if css_path in already_processed_css:
+                continue
+            url = self._get_production_server_url(css_path)
+            tags.append(tag_generator(url))
+            already_processed_css.add(css_path)
 
-        return self.GeneratedCssFilesOutput(tags, already_processed)
+        return self.GeneratedCssFilesOutput(
+            tags, already_processed_js, already_processed_css
+        )
 
     def generate_vite_asset_url(self, path: str) -> str:
         """
