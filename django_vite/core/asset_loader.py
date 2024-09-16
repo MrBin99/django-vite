@@ -313,7 +313,7 @@ class DjangoViteAppClient:
         scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
         # Add dependent CSS
-        tags.extend(self._load_css_files_of_asset(path))
+        tags.extend(self._load_css_files_of_asset(path, attrs=kwargs))
 
         # Add the script by itself
         url = self._get_production_server_url(manifest_entry.file)
@@ -330,6 +330,7 @@ class DjangoViteAppClient:
             "crossorigin": "anonymous",
             "rel": "modulepreload",
             "as": "script",
+            **kwargs,
         }
 
         for dep in manifest_entry.imports:
@@ -390,7 +391,7 @@ class DjangoViteAppClient:
         )
 
         # Add dependent CSS
-        tags.extend(self._preload_css_files_of_asset(path))
+        tags.extend(self._preload_css_files_of_asset(path, attrs=None))
 
         # Preload imports
         for dep in manifest_entry.imports:
@@ -407,21 +408,21 @@ class DjangoViteAppClient:
         return "\n".join(tags)
 
     def _preload_css_files_of_asset(
-        self,
-        path: str,
+        self, path: str, attrs: Optional[Dict[str, str]] = None
     ) -> List[Tag]:
         return self._generate_css_files_of_asset(
             path,
             tag_generator=TagGenerator.stylesheet_preload,
+            attrs=attrs,
         ).tags
 
     def _load_css_files_of_asset(
-        self,
-        path: str,
+        self, path: str, attrs: Optional[Dict[str, str]] = None
     ) -> List[Tag]:
         return self._generate_css_files_of_asset(
             path,
             tag_generator=TagGenerator.stylesheet,
+            attrs=attrs,
         ).tags
 
     class GeneratedCssFilesOutput(NamedTuple):
@@ -438,6 +439,7 @@ class DjangoViteAppClient:
         already_processed_js: Optional[Set[str]] = None,
         already_processed_css: Optional[Set[str]] = None,
         tag_generator: Callable[[str], Tag] = TagGenerator.stylesheet,
+        attrs: Optional[Dict[str, str]] = None,
     ) -> GeneratedCssFilesOutput:
         """
         Generates all CSS tags for dependencies of an asset.
@@ -467,7 +469,11 @@ class DjangoViteAppClient:
                 new_already_processed_js,
                 new_already_processed_css,
             ) = self._generate_css_files_of_asset(
-                import_path, already_processed_js, already_processed_css, tag_generator
+                import_path,
+                already_processed_js,
+                already_processed_css,
+                tag_generator,
+                attrs,
             )
             already_processed_js.update(new_already_processed_js)
             already_processed_css.update(new_already_processed_css)
@@ -477,7 +483,7 @@ class DjangoViteAppClient:
             if css_path in already_processed_css:
                 continue
             url = self._get_production_server_url(css_path)
-            tags.append(tag_generator(url))
+            tags.append(tag_generator(url, attrs=attrs))
             already_processed_css.add(css_path)
 
         return self.GeneratedCssFilesOutput(
