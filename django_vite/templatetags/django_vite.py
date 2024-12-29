@@ -114,7 +114,9 @@ def vite_asset_url(path: str, app: str = DEFAULT_APP_NAME) -> str:
 
 @register.simple_tag
 @mark_safe
-def vite_legacy_polyfills(app: str = DEFAULT_APP_NAME, **kwargs: Dict[str, str]) -> str:
+def vite_legacy_polyfills(
+    app: str = DEFAULT_APP_NAME, nomodule: bool = True, **kwargs: Dict[str, str]
+) -> str:
     """
     Generates a <script> tag to the polyfills generated
     by '@vitejs/plugin-legacy' if used.
@@ -125,6 +127,7 @@ def vite_legacy_polyfills(app: str = DEFAULT_APP_NAME, **kwargs: Dict[str, str])
         app {str} -- Configuration to use.
 
     Keyword Arguments:
+        nomodule {bool} -- Set nomodule attribute, enabled per default.
         **kwargs {Dict[str, str]} -- Adds new attributes to generated
             script tags.
 
@@ -136,7 +139,7 @@ def vite_legacy_polyfills(app: str = DEFAULT_APP_NAME, **kwargs: Dict[str, str])
         str -- The script tag to the polyfills.
     """
     return DjangoViteAssetLoader.instance().generate_vite_legacy_polyfills(
-        app, **kwargs
+        app, nomodule, **kwargs
     )
 
 
