@@ -511,6 +511,7 @@ class DjangoViteAppClient:
 
     def generate_vite_legacy_polyfills(
         self,
+        nomodule: bool = True,
         **kwargs: Dict[str, str],
     ) -> str:
         """
@@ -542,7 +543,9 @@ class DjangoViteAppClient:
                 f"at {self.manifest.manifest_path}"
             )
 
-        scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
+        scripts_attrs = {"crossorigin": "", **kwargs}
+        if nomodule:
+            scripts_attrs["nomodule"] = ""
         url = self._get_production_server_url(polyfills_manifest_entry.file)
 
         return TagGenerator.script(
@@ -820,10 +823,11 @@ class DjangoViteAssetLoader:
     def generate_vite_legacy_polyfills(
         self,
         app: str = DEFAULT_APP_NAME,
+        nomodule: bool = True,
         **kwargs: Dict[str, str],
     ) -> str:
         app_client = self._get_app_client(app)
-        return app_client.generate_vite_legacy_polyfills(**kwargs)
+        return app_client.generate_vite_legacy_polyfills(nomodule, **kwargs)
 
     def generate_vite_legacy_asset(
         self,
