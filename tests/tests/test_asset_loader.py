@@ -4,6 +4,9 @@ from django_vite.core.asset_loader import (
     DjangoViteConfig,
     DjangoViteAssetLoader,
 )
+from pathlib import Path
+from django.conf import settings
+from django_vite.core.asset_loader import DjangoViteConfig
 from django_vite.apps import check_loader_instance
 
 
@@ -135,17 +138,20 @@ def test_parse_manifest_during_dev_mode(dev_mode_true):
     [
         {
             "DJANGO_VITE_DEV_MODE": False,
-            "DJANGO_VITE_MANIFEST_PATH": "dynamic-entry-manifest.json",
+            "DJANGO_VITE_MANIFEST_PATH": Path(settings.STATIC_ROOT)
+            / "dynamic-entry-manifest.json",
         },
         {
             "DJANGO_VITE": {
                 "default": {
                     "dev_mode": False,
-                    "manifest_path": "dynamic-entry-manifest.json",
+                    "manifest_path": Path(settings.STATIC_ROOT)
+                    / "dynamic-entry-manifest.json",
                 }
             }
         },
     ],
+    indirect=True,
 )
 def test_load_dynamic_import_manifest(patch_settings):
     warnings = check_loader_instance()
