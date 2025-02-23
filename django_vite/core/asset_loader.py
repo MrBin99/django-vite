@@ -494,7 +494,7 @@ class DjangoViteAppClient:
         for css_path in manifest_entry.css:
             if css_path in already_processed_css:
                 continue
-            url = self._get_production_server_url(css_path)
+            url = self.get_production_server_url(css_path)
             tags.append(tag_generator(url, attrs=attrs))
             already_processed_css.add(css_path)
 
@@ -558,7 +558,7 @@ class DjangoViteAppClient:
         scripts_attrs = {"crossorigin": "", **kwargs}
         if nomodule:
             scripts_attrs["nomodule"] = ""
-        url = self._get_production_server_url(polyfills_manifest_entry.file)
+        url = self.get_production_server_url(polyfills_manifest_entry.file)
 
         return TagGenerator.script(
             url,
