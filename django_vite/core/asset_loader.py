@@ -7,6 +7,7 @@ import warnings
 from django.apps import apps
 from django.conf import settings
 from django.core.checks import Warning
+from django.utils.module_loading import import_string
 
 from django_vite.core.exceptions import (
     DjangoViteManifestError,
@@ -49,6 +50,9 @@ class DjangoViteConfig(NamedTuple):
 
     # Default Vite server path to React RefreshRuntime for @vitejs/plugin-react.
     react_refresh_url: str = "@react-refresh"
+
+    # The DjangoViteAppClient class to use to parse the manifest and load assets.
+    app_client_class: str = "django_vite.core.asset_loader.DjangoViteAppClient"
 
 
 class ManifestEntry(NamedTuple):
@@ -136,6 +140,14 @@ class ManifestClient:
                 )
             ]
 
+    def load_manifest(self):
+        """
+        Read the Vite manifest.json file.
+        """
+        with open(self.manifest_path, "r") as manifest_file:
+            manifest_content = manifest_file.read()
+            return json.loads(manifest_content)
+
     class ParsedManifestOutput(NamedTuple):
         # all entries within the manifest
         entries: Dict[str, ManifestEntry] = {}
@@ -163,22 +175,20 @@ class ManifestClient:
         legacy_polyfills_entry: Optional[ManifestEntry] = None
 
         try:
-            with open(self.manifest_path, "r") as manifest_file:
-                manifest_content = manifest_file.read()
-                manifest_json = json.loads(manifest_content)
+            manifest = self.load_manifest()
 
-                for path, manifest_entry_data in manifest_json.items():
-                    filtered_manifest_entry_data = {
-                        key: value
-                        for key, value in manifest_entry_data.items()
-                        if key in ManifestEntry._fields
-                    }
-                    manifest_entry = ManifestEntry(**filtered_manifest_entry_data)
-                    entries[path] = manifest_entry
-                    if self.legacy_polyfills_motif in path:
-                        legacy_polyfills_entry = manifest_entry
+            for path, manifest_entry_data in manifest.items():
+                filtered_manifest_entry_data = {
+                    key: value
+                    for key, value in manifest_entry_data.items()
+                    if key in ManifestEntry._fields
+                }
+                manifest_entry = ManifestEntry(**filtered_manifest_entry_data)
+                entries[path] = manifest_entry
+                if self.legacy_polyfills_motif in path:
+                    legacy_polyfills_entry = manifest_entry
 
-                return self.ParsedManifestOutput(entries, legacy_polyfills_entry)
+            return self.ParsedManifestOutput(entries, legacy_polyfills_entry)
 
         except Exception as error:
             raise DjangoViteManifestError(
@@ -212,6 +222,8 @@ class DjangoViteAppClient:
     DjangoViteConfig provides the arguments for the client.
     """
 
+    ManifestClient = ManifestClient
+
     def __init__(
         self, config: DjangoViteConfig, app_name: str = DEFAULT_APP_NAME
     ) -> None:
@@ -226,9 +238,9 @@ class DjangoViteAppClient:
         self.ws_client_url = config.ws_client_url
         self.react_refresh_url = config.react_refresh_url
 
-        self.manifest = ManifestClient(config, app_name)
+        self.manifest = self.ManifestClient(config, app_name)
 
-    def _get_dev_server_url(
+    def get_dev_server_url(
         self,
         path: str,
     ) -> str:
@@ -251,7 +263,7 @@ class DjangoViteAppClient:
             urljoin(static_url_base, path),
         )
 
-    def _get_production_server_url(self, path: str) -> str:
+    def get_production_server_url(self, path: str) -> str:
         """
         Generates an URL to an asset served during production.
 
@@ -302,7 +314,7 @@ class DjangoViteAppClient:
                 this asset in your page.
         """
         if self.dev_mode:
-            url = self._get_dev_server_url(path)
+            url = self.get_dev_server_url(path)
             return TagGenerator.script(
                 url,
                 attrs={"type": "module", **kwargs},
@@ -316,7 +328,7 @@ class DjangoViteAppClient:
         tags.extend(self._load_css_files_of_asset(path, attrs=kwargs))
 
         # Add the script by itself
-        url = self._get_production_server_url(manifest_entry.file)
+        url = self.get_production_server_url(manifest_entry.file)
         tags.append(
             TagGenerator.script(
                 url,
@@ -336,7 +348,7 @@ class DjangoViteAppClient:
         for dep in manifest_entry.imports:
             dep_manifest_entry = self.manifest.get(dep)
             dep_file = dep_manifest_entry.file
-            url = self._get_production_server_url(dep_file)
+            url = self.get_production_server_url(dep_file)
             tags.append(
                 TagGenerator.preload(
                     url,
@@ -382,7 +394,7 @@ class DjangoViteAppClient:
         }
 
         manifest_file = manifest_entry.file
-        url = self._get_production_server_url(manifest_file)
+        url = self.get_production_server_url(manifest_file)
         tags.append(
             TagGenerator.preload(
                 url,
@@ -397,7 +409,7 @@ class DjangoViteAppClient:
         for dep in manifest_entry.imports:
             dep_manifest_entry = self.manifest.get(dep)
             dep_file = dep_manifest_entry.file
-            url = self._get_production_server_url(dep_file)
+            url = self.get_production_server_url(dep_file)
             tags.append(
                 TagGenerator.preload(
                     url,
@@ -482,7 +494,7 @@ class DjangoViteAppClient:
         for css_path in manifest_entry.css:
             if css_path in already_processed_css:
                 continue
-            url = self._get_production_server_url(css_path)
+            url = self.get_production_server_url(css_path)
             tags.append(tag_generator(url, attrs=attrs))
             already_processed_css.add(css_path)
 
@@ -503,11 +515,11 @@ class DjangoViteAppClient:
         """
 
         if self.dev_mode:
-            return self._get_dev_server_url(path)
+            return self.get_dev_server_url(path)
 
         manifest_entry = self.manifest.get(path)
 
-        return self._get_production_server_url(manifest_entry.file)
+        return self.get_production_server_url(manifest_entry.file)
 
     def generate_vite_legacy_polyfills(
         self,
@@ -546,7 +558,7 @@ class DjangoViteAppClient:
         scripts_attrs = {"crossorigin": "", **kwargs}
         if nomodule:
             scripts_attrs["nomodule"] = ""
-        url = self._get_production_server_url(polyfills_manifest_entry.file)
+        url = self.get_production_server_url(polyfills_manifest_entry.file)
 
         return TagGenerator.script(
             url,
@@ -584,7 +596,7 @@ class DjangoViteAppClient:
 
         manifest_entry = self.manifest.get(path)
         scripts_attrs = {"nomodule": "", "crossorigin": "", **kwargs}
-        url = self._get_production_server_url(manifest_entry.file)
+        url = self.get_production_server_url(manifest_entry.file)
 
         return TagGenerator.script(
             url,
@@ -608,7 +620,7 @@ class DjangoViteAppClient:
         if not self.dev_mode:
             return ""
 
-        url = self._get_dev_server_url(self.ws_client_url)
+        url = self.get_dev_server_url(self.ws_client_url)
 
         return TagGenerator.script(
             url,
@@ -633,7 +645,7 @@ class DjangoViteAppClient:
         if not self.dev_mode:
             return ""
 
-        url = self._get_dev_server_url(self.react_refresh_url)
+        url = self.get_dev_server_url(self.react_refresh_url)
         attrs_str = attrs_to_str(kwargs)
 
         return f"""<script type="module" {attrs_str}>
@@ -717,7 +729,8 @@ class DjangoViteAssetLoader:
         for app_name, config in django_vite_settings.items():
             if not isinstance(config, DjangoViteConfig):
                 config = DjangoViteConfig(**config)
-            cls._instance._apps[app_name] = DjangoViteAppClient(config, app_name)
+            app_client_class = import_string(config.app_client_class)
+            cls._instance._apps[app_name] = app_client_class(config, app_name)
 
     @classmethod
     def _apply_legacy_django_vite_settings(cls):
