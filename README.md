@@ -13,6 +13,7 @@ Integration of [ViteJS](https://vitejs.dev/) in a Django project.
   - [Dev Mode](#dev-mode)
   - [Template tags](#template-tags)
   - [Custom attributes](#custom-attributes)
+  - [Loading assets from a CDN](#loading-assets-from-a-cdn)
 - [Vite Legacy Plugin](#vite-legacy-plugin)
 - [Multi-app configuration](#multi-app-configuration)
 - [Configuration Variables](#configuration-variables)
@@ -25,6 +26,7 @@ Integration of [ViteJS](https://vitejs.dev/) in a Django project.
   - [legacy\_polyfills\_motif](#legacy_polyfills_motif)
   - [ws\_client\_url](#ws_client_url)
   - [react\_refresh\_url](#react_refresh_url)
+  - [app\_client\_class](#app_client_class)
 - [Notes](#notes)
   - [Whitenoise](#whitenoise)
 - [Examples](#examples)
@@ -215,6 +217,71 @@ If you want to overrides default attributes just add them like new attributes :
 
 Although it's recommended to keep the default `type="module"` attribute as ViteJS build scripts as ES6 modules.
 
+### Loading assets from a CDN
+
+By default, django-vite will try to load a local `manifest.json`.
+
+If you want django-vite to fetch the manifest from a non-standard source like S3, you can subclass DjangoViteAppClient and override its ManifestClient. Below is a minimal example:
+
+```python
+# myapp/django_vite_s3.py
+import json
+import boto3
+from django_vite.core.asset_loader import ManifestClient, DjangoViteAppClient
+
+class S3ManifestClient(ManifestClient):
+    def load_manifest(self):
+        s3 = boto3.client("s3")
+        res = s3.get_object(Bucket='django-vite-public-example', Key='manifest.json')
+        manifest_content = res["Body"].read()
+        return json.loads(manifest_content)
+
+class S3DjangoViteAppClient(DjangoViteAppClient):
+    ManifestClient = S3ManifestClient
+```
+
+Then configure your app to use your custom `S3DjangoViteAppClient`:
+
+```python
+# settings.py
+from django_vite.core.asset_loader import DjangoViteConfig
+
+DJANGO_VITE = {
+    "default": DjangoViteConfig(
+        dev_mode=False,
+        app_client_class="myapp.django_vite_s3.S3DjangoViteAppClient",
+        ...
+    )
+}
+```
+
+If your "django.contrib.staticfiles" is configured to use S3, then your assets should load properly without needing further configuration.
+
+Since this feature support is a new work-in-progress, please share with the community any configurations that have worked well for you!
+
+If you find yourself needing greater control over how static asset urls are rendered, you can modify `DjangoViteAppClient.get_production_server_url`:
+
+```python
+# myapp/django_vite_s3.py
+import json
+import boto3
+from django_vite.core.asset_loader import ManifestClient, DjangoViteAppClient
+
+class S3ManifestClient(ManifestClient):
+    def load_manifest(self):
+        s3 = boto3.client("s3")
+        res = s3.get_object(Bucket='django-vite-public-example', Key='manifest.json')
+        manifest_content = res["Body"].read()
+        return json.loads(manifest_content)
+
+class S3DjangoViteAppClient(DjangoViteAppClient):
+    ManifestClient = S3ManifestClient
+
+    def get_production_server_url(self, path: str) -> str:
+        # Make additional charge here as needed
+        ...
+```
+
 ## Vite Legacy Plugin
 
 If you want to consider legacy browsers that don't support ES6 modules loading
@@ -360,6 +427,14 @@ The path to the HMR (Hot Module Replacement) client used in the `vite_hmr_client
 - **Legacy Key**: `DJANGO_VITE_REACT_REFRESH_URL`
 
 If you're using React, this will generate the Javascript needed to support React HMR.
+
+### app_client_class
+- **Type**: `str`
+- **Default**: `"django_vite.core.asset_loader.DjangoViteAppClient"`
+
+This is the fully qualified name of a Python class that extends or replaces `DjangoViteAppClient`. This allows you to customize almost any part of django-vite's loader behavior. The most requested reason for adding this feature is customizing how `manifest.json` is loaded.
+
+See [Loading assets from a CDN](#loading-assets-from-a-cdn) for an example of using a custom class to load the manifest from S3.
 
 ## Notes
 
