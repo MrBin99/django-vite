@@ -10,7 +10,7 @@ addopts = '''
 '''
 filterwarnings = "ignore::DeprecationWarning:django_vite.*"
 
-[tool.black]
+[tool.ruff]
 line-length = 88
 
 [tool.ruff.lint]

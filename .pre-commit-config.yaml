@@ -9,11 +9,6 @@ repos:
         args: ["--fix=lf"]
       - id: "trailing-whitespace"
 
-  - repo: "https://github.com/psf/black"
-    rev: "23.3.0"
-    hooks:
-      - id: "black"
-
   - repo: "https://github.com/commitizen-tools/commitizen"
     rev: "v3.13.0"
     hooks:
@@ -26,3 +21,4 @@ repos:
       - id: ruff
         args:
           - --fix
+      - id: ruff-format
