@@ -127,12 +127,6 @@ def test_parse_manifest_during_dev_mode(dev_mode_true):
     assert manifest_client._parse_manifest() == manifest_client.ParsedManifestOutput()
 
 
-def test_parse_manifest_during_dev_mode(dev_mode_true):
-    default_app = DjangoViteAssetLoader.instance()._apps["default"]
-    manifest_client = default_app.manifest
-    assert manifest_client._parse_manifest() == manifest_client.ParsedManifestOutput()
-
-
 @pytest.mark.parametrize(
     "patch_settings",
     [
