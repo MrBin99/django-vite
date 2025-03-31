@@ -73,13 +73,13 @@ def test_check_loader_instance_happy(patch_settings):
     [
         {
             "DJANGO_VITE_DEV_MODE": False,
-            "DJANGO_VITE_MANIFEST_PATH": "fake.json",
+            "DJANGO_VITE_MANIFEST_PATH": "/bad/path/fake.json",
         },
         {
             "DJANGO_VITE": {
                 "default": {
                     "dev_mode": False,
-                    "manifest_path": "fake.json",
+                    "manifest_path": "/bad/path/fake.json",
                 }
             }
         },
@@ -156,3 +156,21 @@ def test_parse_manifest_during_dev_mode(dev_mode_true):
 def test_load_dynamic_import_manifest(patch_settings):
     warnings = check_loader_instance()
     assert len(warnings) == 0
+
+
+def test_manifest_path_as_static_path(patch_settings, tmp_path):
+    # Write a test manifest into place
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text((Path(settings.STATIC_ROOT) / "manifest.json").read_text())
+    patch_settings(
+        {
+            "INSTALLED_APPS": ["django_vite", "django.contrib.staticfiles"],
+            "STATICFILES_DIRS": [str(tmp_path)],
+            # Configured as a string to staticfiles
+            "DJANGO_VITE": {"default": {"manifest_path": "manifest.json"}},
+        }
+    )
+    warnings = check_loader_instance()
+    assert len(warnings) == 0
+    loader = DjangoViteAssetLoader.instance()
+    assert "<script" in loader.generate_vite_asset("src/entry.ts")

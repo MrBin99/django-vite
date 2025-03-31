@@ -405,7 +405,10 @@ export default defineConfig({
 - **Default**: `Path(settings.STATIC_ROOT) / static_url_prefix / "manifest.json"`
 - **Legacy Key**: `DJANGO_VITE_MANIFEST_PATH`
 
-The absolute path, including the filename, to the ViteJS manifest file located in `build.outDir`.
+Either:
+* The absolute path, including the filename, to the ViteJS manifest file located in `build.outDir`.
+* A relative path, indicating a path to a static file (as you'd use with `{% static %}`), if the
+  manifest file is generated into a location in your project's static file hierarchy.
 
 ### legacy_polyfills_motif
 - **Type**: `str`
