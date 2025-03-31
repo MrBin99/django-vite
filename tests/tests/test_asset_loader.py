@@ -1,13 +1,13 @@
-import pytest
-
-from django_vite.core.asset_loader import (
-    DjangoViteConfig,
-    DjangoViteAssetLoader,
-)
 from pathlib import Path
+
+import pytest
 from django.conf import settings
-from django_vite.core.asset_loader import DjangoViteConfig
+
 from django_vite.apps import check_loader_instance
+from django_vite.core.asset_loader import (
+    DjangoViteAssetLoader,
+    DjangoViteConfig,
+)
 
 
 def test_django_vite_asset_loader_cannot_be_instantiated():

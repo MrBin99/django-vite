@@ -1,6 +1,7 @@
 import pytest
 from bs4 import BeautifulSoup
 from django.template import Context, Template
+
 from django_vite.core.exceptions import DjangoViteAssetNotFoundError
 
 

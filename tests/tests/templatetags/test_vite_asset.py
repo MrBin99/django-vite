@@ -1,8 +1,10 @@
+from pathlib import Path
+
 import pytest
 from bs4 import BeautifulSoup
-from pathlib import Path
 from django.conf import settings
 from django.template import Context, Template, TemplateSyntaxError
+
 from django_vite.core.exceptions import (
     DjangoViteAssetNotFoundError,
     DjangoViteConfigNotFoundError,
