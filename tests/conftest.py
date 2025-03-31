@@ -13,7 +13,7 @@ def reload_django_vite():
     DjangoViteAssetLoader.instance()
 
 
-@pytest.fixture()
+@pytest.fixture
 def patch_settings(request, settings):
     """
     1. Patch new settings into django.conf.settings.
@@ -47,14 +47,14 @@ def patch_settings(request, settings):
     reload_django_vite()
 
 
-@pytest.fixture()
+@pytest.fixture
 def delete_settings(patch_settings):
     """
     Unset settings that are part of the default test settings.py
     """
 
     def _delete_settings(*settings_to_delete: str):
-        new_settings = {key: __PYTEST_DELETE__ for key in settings_to_delete}
+        new_settings = dict.fromkeys(settings_to_delete, __PYTEST_DELETE__)
         return patch_settings(new_settings)
 
     return _delete_settings

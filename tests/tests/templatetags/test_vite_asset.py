@@ -259,7 +259,7 @@ def test_vite_asset_nonexistent_app(dev_mode_true):
     assert "Cannot find bad_app in DJANGO_VITE settings" in str(error)
 
 
-@pytest.fixture()
+@pytest.fixture
 def external_vue_app(patch_settings, settings):
     def _wrapper(dev_mode: bool):
         return patch_settings(
