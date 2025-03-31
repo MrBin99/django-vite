@@ -758,6 +758,7 @@ class DjangoViteAssetLoader:
                 f"settings will be ignored since you have a {cls.DJANGO_VITE}"
                 " setting configured. Please remove those legacy django-vite settings.",
                 DeprecationWarning,
+                stacklevel=2,
             )
             return
 
@@ -767,6 +768,7 @@ class DjangoViteAssetLoader:
             "in future releases of django-vite. Please switch to defining your "
             f'settings as {cls.DJANGO_VITE} = {{"default": {{...}},}}.',
             DeprecationWarning,
+            stacklevel=2,
         )
 
         legacy_config = {}
