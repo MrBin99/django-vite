@@ -156,3 +156,33 @@ def test_parse_manifest_during_dev_mode(dev_mode_true):
 def test_load_dynamic_import_manifest(patch_settings):
     warnings = check_loader_instance()
     assert len(warnings) == 0
+
+
+@pytest.mark.parametrize(
+    "patch_settings",
+    [
+        {
+            "DJANGO_VITE": {
+                "default": {
+                    "dev_mode": False,
+                    "manifest_path": Path(settings.STATIC_ROOT).parent
+                    / "named_assets"
+                    / "dist"
+                    / "manifest.json",
+                },
+            },
+        },
+    ],
+    indirect=True,
+)
+def test_named_assets(patch_settings):
+    """
+    Test that assets can be loaded via name.
+    """
+    warnings = check_loader_instance()
+    assert len(warnings) == 0
+    loader = DjangoViteAssetLoader.instance()
+    by_name = loader.generate_vite_asset("one")
+    by_src = loader.generate_vite_asset("one.js")
+    assert "<script" in by_name
+    assert by_src == by_name
