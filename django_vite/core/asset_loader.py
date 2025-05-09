@@ -54,6 +54,8 @@ class DjangoViteConfig(NamedTuple):
     # The DjangoViteAppClient class to use to parse the manifest and load assets.
     app_client_class: str = "django_vite.core.asset_loader.DjangoViteAppClient"
 
+    cache_manifest: bool = True
+
 
 class ManifestEntry(NamedTuple):
     """
@@ -218,6 +220,18 @@ class ManifestClient:
 
         return self._entries[path]
 
+    def reload_manifest(self) -> None:
+        """
+        Reload the manifest file and update internal state.
+
+        This method rereads the manifest.json file and updates the internal
+        entries and legacy_polyfills_entry attributes with the fresh data.
+        """
+        if not self.dev_mode:
+            parsed_output = self._parse_manifest()
+            self._entries = parsed_output.entries
+            self.legacy_polyfills_entry = parsed_output.legacy_polyfills_entry
+
 
 class DjangoViteAppClient:
     """
@@ -240,6 +254,7 @@ class DjangoViteAppClient:
         self.static_url_prefix = config.static_url_prefix
         self.ws_client_url = config.ws_client_url
         self.react_refresh_url = config.react_refresh_url
+        self.cache_manifest = config.cache_manifest
 
         self.manifest = self.ManifestClient(config, app_name)
 
@@ -324,6 +339,10 @@ class DjangoViteAppClient:
             )
 
         tags: List[Tag] = []
+
+        if not self.cache_manifest:
+            self.manifest.reload_manifest()
+
         manifest_entry = self.manifest.get(path)
         scripts_attrs = {"type": "module", "crossorigin": "", **kwargs}
 
