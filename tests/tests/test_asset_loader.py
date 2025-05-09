@@ -1,13 +1,13 @@
-import pytest
-
-from django_vite.core.asset_loader import (
-    DjangoViteConfig,
-    DjangoViteAssetLoader,
-)
 from pathlib import Path
+
+import pytest
 from django.conf import settings
-from django_vite.core.asset_loader import DjangoViteConfig
+
 from django_vite.apps import check_loader_instance
+from django_vite.core.asset_loader import (
+    DjangoViteAssetLoader,
+    DjangoViteConfig,
+)
 
 
 def test_django_vite_asset_loader_cannot_be_instantiated():
@@ -119,12 +119,6 @@ def test_combined_settings(patch_settings):
         "You're mixing the new DJANGO_VITE setting with these legacy settings: "
         "[DJANGO_VITE_DEV_MODE, DJANGO_VITE_ASSETS_PATH]"
     ) in str(record[0].message)
-
-
-def test_parse_manifest_during_dev_mode(dev_mode_true):
-    default_app = DjangoViteAssetLoader.instance()._apps["default"]
-    manifest_client = default_app.manifest
-    assert manifest_client._parse_manifest() == manifest_client.ParsedManifestOutput()
 
 
 def test_parse_manifest_during_dev_mode(dev_mode_true):

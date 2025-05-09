@@ -10,10 +10,10 @@ addopts = '''
 '''
 filterwarnings = "ignore::DeprecationWarning:django_vite.*"
 
-[tool.black]
+[tool.ruff]
 line-length = 88
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
   "E",   # pycodestyle
   "F",   # pyflakes
@@ -23,6 +23,12 @@ select = [
   "SIM", # simplify,
   "DJ",  # django,
   "I",   # isort
+]
+
+ignore = [
+  "E501",   # line too long (taken care of by formatter)
+  "PT012",  # multiple statements in `pytest.raises` (TODO: fix?)
+  "SIM105", # `contextlib.suppress` is slower than try-except, so do not suggest it
 ]
 
 # do not autofix the following violations due to bad DX:

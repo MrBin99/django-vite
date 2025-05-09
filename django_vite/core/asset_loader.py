@@ -1,8 +1,8 @@
 import json
-from pathlib import Path
-from typing import Dict, List, Callable, NamedTuple, Optional, Union, Set
-from urllib.parse import urljoin
 import warnings
+from pathlib import Path
+from typing import Callable, Dict, List, NamedTuple, Optional, Set, Union
+from urllib.parse import urljoin
 
 from django.apps import apps
 from django.conf import settings
@@ -10,9 +10,9 @@ from django.core.checks import Warning
 from django.utils.module_loading import import_string
 
 from django_vite.core.exceptions import (
-    DjangoViteManifestError,
     DjangoViteAssetNotFoundError,
     DjangoViteConfigNotFoundError,
+    DjangoViteManifestError,
 )
 from django_vite.core.tag_generator import Tag, TagGenerator, attrs_to_str
 
@@ -761,6 +761,7 @@ class DjangoViteAssetLoader:
                 f"settings will be ignored since you have a {cls.DJANGO_VITE}"
                 " setting configured. Please remove those legacy django-vite settings.",
                 DeprecationWarning,
+                stacklevel=2,
             )
             return
 
@@ -770,6 +771,7 @@ class DjangoViteAssetLoader:
             "in future releases of django-vite. Please switch to defining your "
             f'settings as {cls.DJANGO_VITE} = {{"default": {{...}},}}.',
             DeprecationWarning,
+            stacklevel=2,
         )
 
         legacy_config = {}
