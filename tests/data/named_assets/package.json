@@ -1,0 +1,10 @@
+{
+  "name": "named_assets",
+  "description": "Example that generates a manifest with named assets",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}

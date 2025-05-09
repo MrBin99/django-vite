@@ -61,6 +61,7 @@ class ManifestEntry(NamedTuple):
     """
 
     file: str
+    name: Optional[str] = None
     src: Optional[str] = None
     isEntry: Optional[bool] = False
     isDynamicEntry: Optional[bool] = False
@@ -185,6 +186,8 @@ class ManifestClient:
                 }
                 manifest_entry = ManifestEntry(**filtered_manifest_entry_data)
                 entries[path] = manifest_entry
+                if manifest_entry.name:
+                    entries[manifest_entry.name] = manifest_entry
                 if self.legacy_polyfills_motif in path:
                     legacy_polyfills_entry = manifest_entry
 
