@@ -210,13 +210,13 @@ class ManifestClient:
             DjangoViteAssetNotFoundError: if cannot find the file path in the manifest
                 or if manifest was never parsed due to dev_mode=True.
         """
-        if path not in self._entries:
+        try:
+            return self._entries[path]
+        except KeyError:
             raise DjangoViteAssetNotFoundError(
                 f"Cannot find {path} for app={self.app_name} in Vite manifest at "
                 f"{self.manifest_path}"
-            )
-
-        return self._entries[path]
+            ) from None
 
 
 class DjangoViteAppClient:
@@ -803,13 +803,12 @@ class DjangoViteAssetLoader:
             DjangoViteConfigNotFoundError: If app was not found in DJANGO_VITE
                 settings.
         """
-
-        if app not in self._apps:
+        try:
+            return self._apps[app]
+        except KeyError:
             raise DjangoViteConfigNotFoundError(
                 f"Cannot find {app} in {self.DJANGO_VITE} settings."
-            )
-
-        return self._apps[app]
+            ) from None
 
     def generate_vite_asset(
         self,
