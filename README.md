@@ -468,6 +468,8 @@ For examples of how to setup the project in v3, please see [django-vite-examples
 
 For another example that uses the module-level legacy settings, please see this [example project here](https://github.com/MrBin99/django-vite-example).
 
+For a ReactJS example, see [this project](https://github.com/knowsuchagency/hello-django-vite).
+
 ## Thanks
 
 Thanks to [Evan You](https://github.com/yyx990803) for the ViteJS library.
