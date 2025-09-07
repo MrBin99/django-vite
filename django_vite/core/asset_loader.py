@@ -1,4 +1,5 @@
 import json
+import mimetypes
 from pathlib import Path
 from typing import Dict, List, Callable, NamedTuple, Optional, Union, Set
 from urllib.parse import urljoin
@@ -68,6 +69,7 @@ class ManifestEntry(NamedTuple):
     css: Optional[List[str]] = []
     imports: Optional[List[str]] = []
     dynamicImports: Optional[List[str]] = []
+    assets: Optional[List[str]] = None
 
 
 class ManifestClient:
@@ -421,6 +423,40 @@ class DjangoViteAppClient:
             )
 
         return "\n".join(tags)
+
+    def generate_preload_assets_tags(
+        self, path: str, file_ext: str, as_type: str, **kwargs: Dict[str, str]
+    ) -> List[str]:
+        """
+        Generates <link rel="preload"> tags for assets of a given entry point.
+        """
+        if self.dev_mode:
+            return []
+
+        try:
+            entry = self.manifest.get(path)
+        except DjangoViteAssetNotFoundError:
+            return []
+
+        if not entry.assets:
+            return []
+
+        tags = []
+
+        for asset in entry.assets:
+            if asset.endswith(file_ext):
+                href = self.get_production_server_url(asset)
+                content_type, _ = mimetypes.guess_type(asset)
+
+                attrs = {"rel": "preload", "href": href, "as": as_type, **kwargs}
+
+                if content_type:
+                    attrs["type"] = content_type
+
+                tag = "<link " + " ".join(f'{k}="{v}"' for k, v in attrs.items()) + ">"
+                tags.append(tag)
+
+        return tags
 
     def _preload_css_files_of_asset(
         self, path: str, attrs: Optional[Dict[str, str]] = None
@@ -835,6 +871,20 @@ class DjangoViteAssetLoader:
     ) -> str:
         app_client = self._get_app_client(app)
         return app_client.generate_vite_asset_url(path)
+
+    def generate_vite_preload_assets(
+        self,
+        path: str,
+        file_ext: str,
+        as_type: str,
+        app: str = DEFAULT_APP_NAME,
+        **kwargs: Dict[str, str],
+    ) -> str:
+        app_client = self._get_app_client(app)
+        tags = app_client.generate_preload_assets_tags(
+            path, file_ext, as_type, **kwargs
+        )
+        return "\n".join(tags)
 
     def generate_vite_legacy_polyfills(
         self,

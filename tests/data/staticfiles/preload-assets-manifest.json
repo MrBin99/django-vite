@@ -1,0 +1,18 @@
+{
+  "src/entry-with-assets.js": {
+    "file": "assets/entry-with-assets.12345.js",
+    "src": "src/entry-with-assets.js",
+    "isEntry": true,
+    "assets": [
+      "assets/font.woff2",
+      "assets/font.otf",
+      "assets/image.png",
+      "assets/data.unknown"
+    ]
+  },
+  "src/entry-without-assets.js": {
+    "file": "assets/entry-without-assets.67890.js",
+    "src": "src/entry-without-assets.js",
+    "isEntry": true
+  }
+}
