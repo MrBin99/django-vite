@@ -30,10 +30,12 @@ def patch_preload_settings(patch_settings):
 
 
 def test_preload_assets_ext_woff2_and_type_font():
-    template = Template("""
+    template = Template(
+        """
     {% load django_vite %}
     {% vite_preload_assets 'src/entry-with-assets.js' file_ext='.woff2' as_type='font' crossorigin='anonymous' %}
-    """)
+    """
+    )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     link_tag = soup.find("link")
@@ -45,10 +47,12 @@ def test_preload_assets_ext_woff2_and_type_font():
 
 
 def test_preload_assets_ext_oft_and_type_font():
-    template = Template("""
+    template = Template(
+        """
     {% load django_vite %}
     {% vite_preload_assets 'src/entry-with-assets.js' file_ext='.otf' as_type='font' crossorigin='anonymous' %}
-    """)
+    """
+    )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     link_tag = soup.find("link")
@@ -57,10 +61,12 @@ def test_preload_assets_ext_oft_and_type_font():
 
 
 def test_preload_assets_image():
-    template = Template("""
+    template = Template(
+        """
     {% load django_vite %}
     {% vite_preload_assets 'src/entry-with-assets.js' file_ext='.png' as_type='image' %}
-    """)
+    """
+    )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     link_tag = soup.find("link")
@@ -71,37 +77,45 @@ def test_preload_assets_image():
 
 
 def test_entry_not_found():
-    template = Template("""
+    template = Template(
+        """
     {% load django_vite %}
     {% vite_preload_assets 'src/non-existent-entry.js' file_ext='.otf' as_type='font' %}
-    """)
+    """
+    )
     html = template.render(Context({}))
     assert html.strip() == ""
 
 
 def test_entry_without_assets():
-    template = Template("""
+    template = Template(
+        """
     {% load django_vite %}
     {% vite_preload_assets 'src/entry-without-assets.js' file_ext='.svg' as_type='image' %}
-    """)
+    """
+    )
     html = template.render(Context({}))
     assert html.strip() == ""
 
 
 def test_no_matching_assets():
-    template = Template("""
+    template = Template(
+        """
     {% load django_vite %}
     {% vite_preload_assets 'src/entry-with-assets.js' file_ext='.svg' as_type='image' %}
-    """)
+    """
+    )
     html = template.render(Context({}))
     assert html.strip() == ""
 
 
 def test_unknown_mimetype():
-    template = Template("""
+    template = Template(
+        """
     {% load django_vite %}
     {% vite_preload_assets 'src/entry-with-assets.js' file_ext='.unknown' as_type='object' %}
-    """)
+    """
+    )
     html = template.render(Context({}))
     soup = BeautifulSoup(html, "html.parser")
     link_tag = soup.find("link")
