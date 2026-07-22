@@ -11,6 +11,7 @@ Integration of [ViteJS](https://vitejs.dev/) in a Django project.
 - [Usage](#usage)
   - [Configuration](#configuration)
   - [Dev Mode](#dev-mode)
+  - [Custom runserver](#custom-runserver)
   - [Template tags](#template-tags)
   - [Custom attributes](#custom-attributes)
   - [Loading assets from a CDN](#loading-assets-from-a-cdn)
@@ -42,7 +43,7 @@ pip install django-vite
 ```
 
 Add `django_vite` to your `INSTALLED_APPS` in your `settings.py`
-(before your apps that are using it).
+(before `django.contrib.staticfiles` and your apps that are using it).
 
 ```python
 INSTALLED_APPS = [
@@ -125,11 +126,39 @@ STATICFILES_DIRS = [
 The `dev_mode`/`DJANGO_VITE_DEV_MODE` boolean defines if you want to include assets in development mode or production mode.
 - In development mode, assets are included as modules using the ViteJS
   webserver. This will enable HMR for your assets.
+  The custom runserver command (see [Custom runserver](#custom-runserver))
+  handles proxying missing assets to the Vite dev server automatically.
 - In production mode, assets are included as standard assets
   (no ViteJS webserver and HMR) like default Django static files.
   This means that your assets must be compiled with ViteJS before.
 - This setting may be set as the same value as your `DEBUG` setting in
   Django. But you can do what is good for your needs.
+
+### Custom runserver
+
+Django-Vite provides a custom `runserver` management command that automatically
+proxies Vite assets to the Vite development server. When you run `python manage.py runserver`,
+the command will:
+
+- Serve files that exist on disk via Django's staticfiles (e.g. vendor JS/CSS)
+- Proxy missing assets to the Vite dev server (e.g. uncompiled HMR assets)
+- Proxy `__open-in-editor` requests to the Vite dev server for Vue DevTools integration
+
+This means you don't need to manually configure proxying — the handler checks if each
+requested file exists in Django's staticfiles first, and only proxies to Vite when
+the file is not found on disk. The `__open-in-editor` endpoint (used by Vue DevTools)
+is always proxied to Vite regardless.
+
+To disable the Vite proxy and use the standard Django staticfiles handler, use the
+`--novite` flag:
+
+```
+python manage.py runserver --novite
+```
+
+> **Note:** The custom runserver only takes effect when `django_vite` appears before
+> `django.contrib.staticfiles` in `INSTALLED_APPS`. This is because Django's management
+> command discovery uses the first matching command it finds.
 
 ### Template tags
 

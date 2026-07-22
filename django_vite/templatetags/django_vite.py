@@ -3,8 +3,7 @@ from typing import Dict
 from django import template
 from django.utils.safestring import mark_safe
 
-from django_vite.core.asset_loader import DjangoViteAssetLoader, DEFAULT_APP_NAME
-
+from django_vite.core.asset_loader import DEFAULT_APP_NAME, DjangoViteAssetLoader
 
 register = template.Library()
 

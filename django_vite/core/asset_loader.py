@@ -1,8 +1,8 @@
 import json
-from pathlib import Path
-from typing import Dict, List, Callable, NamedTuple, Optional, Union, Set
-from urllib.parse import urljoin
 import warnings
+from pathlib import Path
+from typing import Callable, Dict, List, NamedTuple, Optional, Set, Union
+from urllib.parse import urljoin
 
 from django.apps import apps
 from django.conf import settings
@@ -10,13 +10,26 @@ from django.core.checks import Warning
 from django.utils.module_loading import import_string
 
 from django_vite.core.exceptions import (
-    DjangoViteManifestError,
     DjangoViteAssetNotFoundError,
     DjangoViteConfigNotFoundError,
+    DjangoViteManifestError,
 )
 from django_vite.core.tag_generator import Tag, TagGenerator, attrs_to_str
 
 DEFAULT_APP_NAME = "default"
+DJANGO_VITE = "DJANGO_VITE"
+LEGACY_DJANGO_VITE_SETTINGS: Dict[str, Optional[str]] = {
+    "DJANGO_VITE_DEV_MODE": "dev_mode",
+    "DJANGO_VITE_DEV_SERVER_PROTOCOL": "dev_server_protocol",
+    "DJANGO_VITE_DEV_SERVER_HOST": "dev_server_host",
+    "DJANGO_VITE_DEV_SERVER_PORT": "dev_server_port",
+    "DJANGO_VITE_STATIC_URL_PREFIX": "static_url_prefix",
+    "DJANGO_VITE_MANIFEST_PATH": "manifest_path",
+    "DJANGO_VITE_LEGACY_POLYFILLS_MOTIF": "legacy_polyfills_motif",
+    "DJANGO_VITE_WS_CLIENT_URL": "ws_client_url",
+    "DJANGO_VITE_REACT_REFRESH_URL": "react_refresh_url",
+    "DJANGO_VITE_ASSETS_PATH": None,
+}
 
 
 class DjangoViteConfig(NamedTuple):
@@ -670,21 +683,6 @@ class DjangoViteAssetLoader:
     _instance = None
     _apps: Dict[str, DjangoViteAppClient]
 
-    DJANGO_VITE = "DJANGO_VITE"
-
-    LEGACY_DJANGO_VITE_SETTINGS: Dict[str, Optional[str]] = {
-        "DJANGO_VITE_DEV_MODE": "dev_mode",
-        "DJANGO_VITE_DEV_SERVER_PROTOCOL": "dev_server_protocol",
-        "DJANGO_VITE_DEV_SERVER_HOST": "dev_server_host",
-        "DJANGO_VITE_DEV_SERVER_PORT": "dev_server_port",
-        "DJANGO_VITE_STATIC_URL_PREFIX": "static_url_prefix",
-        "DJANGO_VITE_MANIFEST_PATH": "manifest_path",
-        "DJANGO_VITE_LEGACY_POLYFILLS_MOTIF": "legacy_polyfills_motif",
-        "DJANGO_VITE_WS_CLIENT_URL": "ws_client_url",
-        "DJANGO_VITE_REACT_REFRESH_URL": "react_refresh_url",
-        "DJANGO_VITE_ASSETS_PATH": None,
-    }
-
     def __init__(self) -> None:
         raise RuntimeError("Use the instance() method instead.")
 
@@ -724,7 +722,7 @@ class DjangoViteAssetLoader:
         DjangoViteAppClients.
         """
 
-        django_vite_settings = getattr(settings, cls.DJANGO_VITE, None)
+        django_vite_settings = getattr(settings, DJANGO_VITE, None)
 
         if not django_vite_settings:
             return
@@ -743,7 +741,7 @@ class DjangoViteAssetLoader:
         """
 
         applied_settings = dir(settings)
-        legacy_settings_keys = cls.LEGACY_DJANGO_VITE_SETTINGS.keys()
+        legacy_settings_keys = LEGACY_DJANGO_VITE_SETTINGS.keys()
         applied_legacy_settings = [
             key for key in legacy_settings_keys if key in applied_settings
         ]
@@ -754,11 +752,11 @@ class DjangoViteAssetLoader:
         # If there are both new DJANGO_VITE settings as well as legacy settings, then
         # allow _apply_django_vite_settings to apply only the DJANGO_VITE configs and
         # ignore the legacy settings.
-        if cls.DJANGO_VITE in applied_settings:
+        if DJANGO_VITE in applied_settings:
             warnings.warn(
-                f"You're mixing the new {cls.DJANGO_VITE} setting with these "
+                f"You're mixing the new {DJANGO_VITE} setting with these "
                 f"legacy settings: [{', '.join(applied_legacy_settings)}]. Those legacy "
-                f"settings will be ignored since you have a {cls.DJANGO_VITE}"
+                f"settings will be ignored since you have a {DJANGO_VITE}"
                 " setting configured. Please remove those legacy django-vite settings.",
                 DeprecationWarning,
             )
@@ -768,13 +766,13 @@ class DjangoViteAssetLoader:
         warnings.warn(
             f"The settings [{', '.join(applied_legacy_settings)}] will be removed "
             "in future releases of django-vite. Please switch to defining your "
-            f'settings as {cls.DJANGO_VITE} = {{"default": {{...}},}}.',
+            f'settings as {DJANGO_VITE} = {{"default": {{...}},}}.',
             DeprecationWarning,
         )
 
         legacy_config = {}
         for legacy_setting in applied_legacy_settings:
-            new_config_name = cls.LEGACY_DJANGO_VITE_SETTINGS[legacy_setting]
+            new_config_name = LEGACY_DJANGO_VITE_SETTINGS[legacy_setting]
             if new_config_name:
                 legacy_config[new_config_name] = getattr(settings, legacy_setting)
         legacy_config = DjangoViteConfig(**legacy_config)
@@ -806,7 +804,7 @@ class DjangoViteAssetLoader:
 
         if app not in self._apps:
             raise DjangoViteConfigNotFoundError(
-                f"Cannot find {app} in {self.DJANGO_VITE} settings."
+                f"Cannot find {app} in {DJANGO_VITE} settings."
             )
 
         return self._apps[app]
