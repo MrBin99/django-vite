@@ -5,6 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 STATIC_URL = "/static/"
 USE_TZ = True
+ROOT_URLCONF = "tests.urls"
 
 INSTALLED_APPS = [
     "django_vite",
