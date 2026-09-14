@@ -63,6 +63,28 @@ def test_vite_legacy_polyfills_production(patch_manifest_path):
     assert script_tag["nomodule"] == ""
 
 
+@pytest.mark.parametrize(
+    "patch_manifest_path",
+    [
+        "new_settings",
+        "legacy_settings",
+    ],
+    indirect=True,
+)
+def test_vite_legacy_polyfills_no_nomodule(patch_manifest_path):
+    template = Template(
+        """
+        {% load django_vite %}
+        {% vite_legacy_polyfills nomodule=False %}
+    """
+    )
+    html = template.render(Context({}))
+    soup = BeautifulSoup(html, "html.parser")
+    script_tag = soup.find("script")
+    assert script_tag["src"] == "assets/polyfills-legacy-f4c2b91e.js"
+    assert not script_tag.has_attr("nomodule")
+
+
 @pytest.fixture
 def patch_manifest_path_custom_motif(request, settings, patch_settings):
     if request.param == "new_settings":
