@@ -18,7 +18,7 @@ setup(
     url="https://github.com/MrBin99/django-vite",
     license="Apache License, Version 2.0",
     include_package_data=True,
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     requires=[
         "Django (>=3.2)",
     ],
