@@ -200,3 +200,39 @@ def vite_react_refresh(
     return DjangoViteAssetLoader.instance().generate_vite_react_refresh_url(
         app, **kwargs
     )
+
+
+@register.simple_tag
+@mark_safe
+def vite_preload_assets(
+    path: str,
+    file_ext: str,
+    as_type: str,
+    app: str = DEFAULT_APP_NAME,
+    **kwargs: Dict[str, str],
+):
+    """
+    Generates <link rel="preload"> tags for assets of a given entry point.
+
+    Arguments:
+        path {str} -- Path to a Vite asset to include.
+        file_ext {str} -- File extension to filter assets by (e.g. 'woff2').
+            Used to specify which asset types to preload from the entry point.
+        as_type {str} -- Resource type for the 'as' attribute of the preload link
+            (e.g. 'font'). This tells the browser how to handle the resource.
+        app {str} -- Configuration to use.
+
+    Keyword Arguments:
+        **kwargs {Dict[str, str]} -- Additional attributes for the generated
+            link tags (e.g., crossorigin="anonymous").
+
+    Returns:
+        str -- The <link rel="preload"> tags for all assets under the specified entry
+    """
+    return DjangoViteAssetLoader.instance().generate_vite_preload_assets(
+        path,
+        file_ext=file_ext,
+        as_type=as_type,
+        app=app,
+        **kwargs,
+    )
